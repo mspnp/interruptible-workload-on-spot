@@ -32,18 +32,18 @@ param adminPassword string
 
 /*** EXISTING HUB RESOURCES ***/
 
-resource targetVirtualNetwork 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
+resource targetVirtualNetwork 'Microsoft.Network/virtualNetworks@2021-08-01' existing = {
   name: targetVnetResourceId
 }
 
-resource snet 'Microsoft.Network/virtualNetworks/subnets@2021-05-01' existing = {
+resource snet 'Microsoft.Network/virtualNetworks/subnets@2021-08-01' existing = {
   parent: targetVirtualNetwork
   name: 'snet-spot'
 }
 
 /*** RESOURCES ***/
 
-resource pip 'Microsoft.Network/publicIpAddresses@2020-11-01' = {
+resource pip 'Microsoft.Network/publicIPAddresses@2021-08-01' = {
   name: 'pip-spot'
   location: location
   properties: {
@@ -54,7 +54,7 @@ resource pip 'Microsoft.Network/publicIpAddresses@2020-11-01' = {
   }
 }
 
-resource nic 'Microsoft.Network/networkInterfaces@2020-11-01' = {
+resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
   name: 'nic-spot'
   location: location
   properties: {
@@ -73,9 +73,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2020-11-01' = {
       }
     ]
   }
-  dependsOn: [
-    pip
-  ]
+  dependsOn: []
 }
 
 resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
@@ -120,7 +118,7 @@ resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     priority: 'Spot'
     evictionPolicy: 'Deallocate'
     billingProfile: {
-      maxPrice: '-1'
+      maxPrice: -1
     }
   }
   dependsOn: [
@@ -128,7 +126,7 @@ resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   ]
 }
 
-resource diagnosticsStorageAccountName 'Microsoft.Storage/storageAccounts@2019-04-01' = {
+resource diagnosticsStorageAccountName 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: 'diagstoragespot2019'
   location: location
   properties: {}
