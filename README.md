@@ -118,6 +118,8 @@ Following the steps below will result in the creation of the following Azure res
 | A Public IP address                       | The public IP address that allows to communicate with the Azure Spot VM outside the Virtual Network. It means over internet (i.e. from your computer) or within the Azure backbone from other Azure resources.                                                                   |
 | A Storage Account (diagnostics)           | The Azure Storage Account that is  employed to send the Azure Spot VM boot diagsnotics telemetry.  |
 
+![Depict the Azure Spot VM infrastructure diagram after deployment](./spot-deploymentdiagram.png)
+
 > **Note**
 > :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
 
