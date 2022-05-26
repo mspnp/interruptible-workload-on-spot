@@ -2,11 +2,7 @@ targetScope = 'resourceGroup'
 
 /*** PARAMETERS ***/
 
-@description('The VNet Resource ID that the VM Spot will be joined to')
-@minLength(79)
-param targetVnetResourceId string
-
-@description('The Azure Spot  VM region. This needs to be the same region as the vnet provided in these parameters.')
+@description('The Azure Spot VM region. This needs to be the same region as the vnet provided in these parameters.')
 @allowed([
   'australiaeast'
   'canadacentral'
@@ -30,18 +26,27 @@ param location string = 'eastus2'
 @secure()
 param adminPassword string
 
-/*** EXISTING HUB RESOURCES ***/
-
-resource targetVirtualNetwork 'Microsoft.Network/virtualNetworks@2021-08-01' existing = {
-  name: targetVnetResourceId
-}
-
-resource snet 'Microsoft.Network/virtualNetworks/subnets@2021-08-01' existing = {
-  parent: targetVirtualNetwork
-  name: 'snet-spot'
-}
-
 /*** RESOURCES ***/
+
+resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {
+  name: 'vnet-spot'
+  location: location
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        '10.200.0.0/16'
+      ]
+    }
+  }
+
+  resource snet 'subnets' = {
+    name: 'snet-spot'
+    properties: {
+      addressPrefix: '10.200.0.0/27'
+    }
+  }
+
+}
 
 resource pip 'Microsoft.Network/publicIPAddresses@2021-08-01' = {
   name: 'pip-spot'
@@ -63,7 +68,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
         name: 'ipconfig'
         properties: {
           subnet: {
-            id: snet.id
+            id: vnet::snet.id
           }
           privateIPAllocationMethod: 'Dynamic'
           publicIPAddress: {
@@ -76,7 +81,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
   dependsOn: []
 }
 
-resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
+resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   name: 'vm-spot'
   location: location
   properties: {
@@ -112,7 +117,7 @@ resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: true
-        storageUri: 'https://diagstoragespot2019.blob.core.windows.net/'
+        storageUri: 'https://${sa.name}.blob.core.windows.net/'
       }
     }
     priority: 'Spot'
@@ -122,14 +127,13 @@ resource virtualMachineName 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     }
   }
   dependsOn: [
-    diagnosticsStorageAccountName
+   sa
   ]
 }
 
-resource diagnosticsStorageAccountName 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'diagstoragespot2019'
+resource sa 'Microsoft.Storage/storageAccounts@2021-09-01' = {
+  name: 'savmspotdiagnostics'
   location: location
-  properties: {}
   kind: 'Storage'
   sku: {
     name: 'Standard_LRS'
