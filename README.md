@@ -100,7 +100,7 @@ When building reliable interruptible workloads, you will be focused on four main
    az upgrade
    ```
 
-   [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)#
+   [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
@@ -144,7 +144,7 @@ Following the steps below will result in the creation of the following Azure res
    az group create -n rg-vmspot -l centralus
    ```
 
-1. Before deploying navigate to the [Azure Spot advisor] pricing page to pick up an VM size of your preference. Alternatively, if had installed JQ you could  execute the following:
+1. Before deploying navigate to the [Azure Spot advisor] pricing page to pick up an VM size of your preference. Alternatively, if you had installed JQ you could  execute the following:
 
    ```bash
    curl -X GET 'https://prices.azure.com/api/retail/prices?api-version=2021-10-01-preview&$filter=serviceName%20eq%20%27Virtual%20Machines%27%20and%20priceType%20eq%20%27Consumption%27%20and%20armRegionName%20eq%20%27eastus2%27%20and%20contains(productName,%20%27Linux%27)%20and%20contains(skuName,%20%27Low%20Priority%27)%20eq%20false' --header 'Content-Type: application/json' --header 'Accept: application/json' | jq -r '.Items | sort_by(.skuName) | group_by(.armSkuName) | [["Sku Retail[$/Hour] Spot[$/Hour] Savings[%]"]] + map([.[0].armSkuName, .[0].retailPrice, .[1].retailPrice, (100-(100*(.[1].retailPrice / .[0].retailPrice)))]) | .[] | @tsv' | column -t
