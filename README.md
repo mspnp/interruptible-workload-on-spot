@@ -47,7 +47,7 @@ Some important concepts when building on top of Azure Spot VM instances are:
 
 1. Subscription Limits: 20 cores per subscription by default. Some Subscriptions are not supported (please take a look at the list of supported supported types).
 1. Eviction:
-   1. Rate: it is nothing but the chances of being evicted at a specific location. A common practice is to choose the location based on the eviction rate by SKU querying the pricing history view from Azure Portal in addition to [Azure Spot VM advisor](https://azure.microsoft.com/pricing/spot-advisor/).
+   1. Rate: it is nothing but the chances of being evicted at a specific location. A common practice is to choose the location based on the eviction rate by SKU querying the pricing history view from Azure Portal in addition to [Azure Spot advisor].
    1.	Type: you can choose between **Max Price or Capacity** or **Capacity Only**
    		1. Capacity: when using Azure Spot Virtual Machine Scalesets (VMSS) with **Manual** scaling, a good practice is to enable the **Try to Restore** option if your policy eviction is **Deallocate**. Provided Azure infrastructure collected capacity back, this configuration looks for those clusters that has the most spare capacity, and will attempt to reploy your deallocated instances on top of them. Therefore, it provides your Azure Spot VMSS with better surviving chances next time an eviction event kicks in. When configured with **Autoscale**, this option is not avaialble as this implements its own logic to reallocate instances.
    			 1. VM Configuration: as flexible as choosing the SKU, the better are chances to be allocate Azure Spot VM/VMSS. Some SKU(s) like B-series or Promo versions of any size are not supported.
@@ -82,3 +82,106 @@ When building reliable interruptible workloads, you will be focused on four main
 
 > **Note**
 > The aforementioned states are just a reduced list of possible valid conditions for an reliable interruptible workload. You might find others that are convenient for your own workloads.
+
+### Installation
+
+#### Prerequisites
+
+1. An Azure subscription. You can [open an account for free](https://azure.microsoft.com/free).
+1. [Azure CLI installed](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) or you can perform this from Azure Cloud Shell by clicking below.
+
+   ```bash
+   az login
+   ```
+
+1. Ensure you have latest version
+
+   ```bash
+   az upgrade
+   ```
+
+   [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)#
+
+1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
+
+#### Expected Results
+
+Following the steps below will result in the creation of the following Azure resources that will be used throughout this Reference Implementation.
+
+| Object                                    | Purpose                                                                                                                                                                                                                                                                          |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A Resource Group                          | Contains all of your organization's related networking, and copmute resources.                                                                                                                                                                                                   |
+| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation we have choosen the size `Standard_D2s_v3`                                       |
+| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview) |
+| A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
+| A Subnet                                  | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
+| A Public IP address                       | The public IP address that allows to communicate with the Azure Spot VM outside the Virtual Network. It means over internet (i.e. from your computer) or within the Azure backbone from other Azure resources.                                                                   |
+| A Storage Account (diagnostics)           | The Azure Storage Account that is  employed to send the Azure Spot VM boot diagsnotics telemetry.  |
+
+> **Note**
+> :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
+
+#### Clone the repository
+
+1. Clone this repository
+
+   ```bash
+   git clone https://github.com/mspnp/interruptible-workload-on-spot.git
+   ```
+   > **Note**
+   > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
+
+1. Navigate to the container-apps-fabrikam-dronedelivery folder
+
+   ```bash
+   cd ./interruptible-workload-on-spot/
+   ```
+#### Deploy the Azure Spot VM
+
+1. Create the Azure Spot VM resource group
+
+   ```bash
+   az group create -n rg-vmspot -l centralus
+   ```
+
+1. Before deploying navigate to the [Azure Spot advisor] pricing page to pick up an VM size of your preference. Alternatively, if had installed JQ you could  execute the following:
+
+   ```bash
+   curl -X GET 'https://prices.azure.com/api/retail/prices?api-version=2021-10-01-preview&$filter=serviceName%20eq%20%27Virtual%20Machines%27%20and%20priceType%20eq%20%27Consumption%27%20and%20armRegionName%20eq%20%27eastus2%27%20and%20contains(productName,%20%27Linux%27)%20and%20contains(skuName,%20%27Low%20Priority%27)%20eq%20false' --header 'Content-Type: application/json' --header 'Accept: application/json' | jq -r '.Items | sort_by(.skuName) | group_by(.armSkuName) | [["Sku Retail[$/Hour] Spot[$/Hour] Savings[%]"]] + map([.[0].armSkuName, .[0].retailPrice, .[1].retailPrice, (100-(100*(.[1].retailPrice / .[0].retailPrice)))]) | .[] | @tsv' | column -t
+   ```
+
+   > **Note**
+   > :bulb: You could modify this query by changing the filter for example to incorporte the VM sizes you are mostly interested in as well as specific regions.
+
+   You should get an output similar as shown below:
+
+   ```output
+   Sku                        Retail[$/Hour]  Spot[$/Hour]  Savings[%]
+   Standard_DC16ds_v3         1.808           0.7232        60
+   Standard_DC16s_v3          1.536           0.6144        60
+   Standard_DC1ds_v3          0.113           0.0452        60
+   ...
+   Standard_NC48ads_A100_v4   7.346           2.9384        60
+   Standard_NC96ads_A100_v4   14.692          5.8768        60
+   Standard_ND96amsr_A100_v4  32.77           16.385        50
+   ```
+
+   > **Note**
+   > :bulb: Provided you have choosen a **Max Price and Capacity** eviction policy, it is a good practice to regularly use the [Azure Retail Prices API] to check whether the **Max Price** you set is doing well against  **Current Price**. You might want to consider scheduling this query and respond with **Max Price** changes as well as gracefully deallocate the Virtual Machine accordingly.
+
+1. Create the Azure Spot VM deloyment
+
+   ```bash
+   az deployment group create -g rg-vmspot -f main.bicep
+   ```
+
+#### Clean up
+
+1. Delete the Azure Spot VM resource group
+
+   ```bash
+   az group delete -n rg-vmspot -y
+   ```
+
+[Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor/
+[Azure Retail Prices API]: (https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices).
