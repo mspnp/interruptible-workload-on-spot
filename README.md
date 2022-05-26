@@ -69,7 +69,7 @@ Some important concepts when building on top of Azure Spot VM instances are:
 
 ## The Workload
 
-One of well-suited workload types for Azure Spot VM are batch processing apps. This reference implementation contains a simple and asyncronously queue-processing (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demostrate how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
+One of well-suited workload types for Azure Spot VM are batch processing apps. This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demostrate how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
 
 ### Planning for being Fault Tolerant
 
