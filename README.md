@@ -183,5 +183,5 @@ Following the steps below will result in the creation of the following Azure res
    az group delete -n rg-vmspot -y
    ```
 
-[Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor/
-[Azure Retail Prices API]: (https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices).
+[Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
+[Azure Retail Prices API]: https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices
