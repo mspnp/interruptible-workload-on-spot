@@ -120,4 +120,21 @@ resource saVmDiagnostics 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
 }
 
+resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
+  name: 'saworkloadqueue'
+  location: location
+  kind: 'Storage'
+  sku: {
+    name: 'Standard_LRS'
+  }
+
+  resource qs 'queueServices' = {
+    name: 'default'
+
+    resource q 'queues' = {
+      name: 'messaging'
+    }
+  }
+}
+
 /*** OUTPUTS ***/
