@@ -9,6 +9,14 @@ param location string = 'eastus2'
 @secure()
 param adminPassword string
 
+/*** EXISTING RESOURCES ***/
+
+// Built-in Azure RBAC role that is applied to a Azure Storage queue to grant with peek, retrieve, and delete a message privileges. Granted to Azure Spot VM system mananged identity.
+resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  name: '8a0f0c08-91a1-4084-bc3d-661d67233fed'
+  scope: subscription()
+}
+
 /*** RESOURCES ***/
 
 resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {
@@ -67,6 +75,9 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
 resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   name: 'vm-spot'
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     hardwareProfile: {
       vmSize: 'Standard_D2s_v3'
@@ -134,6 +145,18 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
     resource q 'queues' = {
       name: 'messaging'
     }
+  }
+}
+
+
+// Grant the Azure Spot VM managed identity with Storage Queue Data Message Processor Role permissions.
+resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  scope:saWorkloadQueue
+  name: guid(resourceGroup().id, 'mi-vmspot', storageQueueDataMessageProcessorRole.id)
+  properties: {
+    roleDefinitionId: storageQueueDataMessageProcessorRole.id
+    principalId: vm.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
