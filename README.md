@@ -104,6 +104,9 @@ When building reliable interruptible workloads, you will be focused on four main
 
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
+> **Note**
+> :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
+
 #### Expected Results
 
 Following the steps below will result in the creation of the following Azure resources that will be used throughout this Reference Implementation.
@@ -184,7 +187,6 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    > **Note**
    > :bulb: Provided you have choosen a **Max Price and Capacity** eviction policy, it is a good practice to regularly use the [Azure Retail Prices API] to check whether the **Max Price** you set is doing well against  **Current Price**. You might want to consider scheduling this query and respond with **Max Price** changes as well as gracefully deallocate the Virtual Machine accordingly.
 
-
 #### Clone the repository
 
 1. Clone this repository
@@ -192,9 +194,6 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```bash
    git clone https://github.com/mspnp/interruptible-workload-on-spot.git
    ```
-   > **Note**
-   > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
-
 1. Navigate to the container-apps-fabrikam-dronedelivery folder
 
    ```bash
