@@ -123,30 +123,42 @@ Following the steps below will result in the creation of the following Azure res
 > **Note**
 > :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
 
-#### Clone the repository
+#### Planning
 
-1. Clone this repository
+At this point, you have learnt that as an Architect you are tasked at being flexile which could be translated into look for as many options as you can find that align well with your orgnization business goals in terms of budget while these alternatives meet non functional requirements for your workload at the same time.
 
-   ```bash
-   git clone https://github.com/mspnp/interruptible-workload-on-spot.git
-   ```
+1. Get acquiented with the VM sizes Azure can offer you, and try to pick out some of them. The following command list VM Skus in `US East 2` that has a number of cores not greather than `8` by excluding from the results not supported options when using Azure Spot VM/VMSS instances:
+
    > **Note**
-   > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
-
-1. Navigate to the container-apps-fabrikam-dronedelivery folder
+   > :bulb: In the future when creating your own interruptible workload ensure you right size your compute requirements, and include the filters in the following query or consider using the [Virtual machine selector tool](https://azure.microsoft.com/pricing/vm-selector/).
 
    ```bash
-   cd ./interruptible-workload-on-spot/
-   ```
-#### Deploy the Azure Spot VM
-
-1. Create the Azure Spot VM resource group
-
-   ```bash
-   az group create -n rg-vmspot -l centralus
+   az vm list-sizes -l eastus2 --query "sort_by([?numberOfCores <=\`8\` && contains(name,'Standard_B') == \`false\` && contains(name,'_Promo') == \`false\`].{Name:name, Cores:numberOfCores, RamMB:memoryInMb, DiskSizeMB:resourceDiskSizeInMb}, &Cores)" --output table
    ```
 
-1. Before deploying navigate to the [Azure Spot advisor] pricing page to pick up an VM size of your preference. Alternatively, if you had installed JQ you could  execute the following:
+   The command above display an output similar to the following:
+
+   ```output
+   Name                  Cores    RamMB    DiskSizeMB
+   --------------------  -------  -------  ------------
+   Standard_D1_v2        1        3584     51200
+   Standard_F1           1        2048     16384
+   ...
+   Standard_D2_v2        2        7168     102400
+   Standard_D11_v2       2        14336    102400
+   ...
+   Standard_D12_v2       4        28672    204800
+   Standard_F4           4        8192     65536
+   ...
+   Standard_NC6s_v3      6        114688   344064
+   Standard_NV6          6        57344    389120
+   ...
+   Standard_E8as_v4      8        65536    131072
+   Standard_D4           8        28672    409600
+   ...
+   ```
+
+1. Before laying out an infrastructure proposal, you have to be aware about pricing. You can navigate to the [Azure Spot advisor] to contrast alternatives you have found from the previous step to apply another fitler more budget related for a final cherry-pick. Alternatively, if you had installed JQ you could execute the following command:
 
    ```bash
    curl -X GET 'https://prices.azure.com/api/retail/prices?api-version=2021-10-01-preview&$filter=serviceName%20eq%20%27Virtual%20Machines%27%20and%20priceType%20eq%20%27Consumption%27%20and%20armRegionName%20eq%20%27eastus2%27%20and%20contains(productName,%20%27Linux%27)%20and%20contains(skuName,%20%27Low%20Priority%27)%20eq%20false' --header 'Content-Type: application/json' --header 'Accept: application/json' | jq -r '.Items | sort_by(.skuName) | group_by(.armSkuName) | [["Sku Retail[$/Hour] Spot[$/Hour] Savings[%]"]] + map([.[0].armSkuName, .[0].retailPrice, .[1].retailPrice, (100-(100*(.[1].retailPrice / .[0].retailPrice)))]) | .[] | @tsv' | column -t
@@ -170,6 +182,30 @@ Following the steps below will result in the creation of the following Azure res
 
    > **Note**
    > :bulb: Provided you have choosen a **Max Price and Capacity** eviction policy, it is a good practice to regularly use the [Azure Retail Prices API] to check whether the **Max Price** you set is doing well against  **Current Price**. You might want to consider scheduling this query and respond with **Max Price** changes as well as gracefully deallocate the Virtual Machine accordingly.
+
+
+#### Clone the repository
+
+1. Clone this repository
+
+   ```bash
+   git clone https://github.com/mspnp/interruptible-workload-on-spot.git
+   ```
+   > **Note**
+   > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
+
+1. Navigate to the container-apps-fabrikam-dronedelivery folder
+
+   ```bash
+   cd ./interruptible-workload-on-spot/
+   ```
+#### Deploy the Azure Spot VM
+
+1. Create the Azure Spot VM resource group
+
+   ```bash
+   az group create -n rg-vmspot -l centralus
+   ```
 
 1. Create the Azure Spot VM deloyment
 
