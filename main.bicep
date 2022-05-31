@@ -17,12 +17,6 @@ resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefin
   scope: subscription()
 }
 
-// Built-in Azure RBAC role that is applied to a Virtual Machine to grant with admin login  privileges. Granted to an Azure AD user
-resource virtualMachineAdministratorLoginRole 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  name: '1c0163c0-47e6-4577-8991-ea5c82e286e4'
-  scope: subscription()
-}
-
 /*** RESOURCES ***/
 
 resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {

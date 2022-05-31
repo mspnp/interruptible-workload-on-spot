@@ -104,12 +104,6 @@ When building reliable interruptible workloads, you will be focused on four main
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
-1. Install the Az CLI with SSH extension to retrieve ephemeral SSH cert
-
-   ```bash
-   az extension add --name ssh
-   ```
-
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
 > **Note**
