@@ -118,6 +118,8 @@ When building reliable interruptible workloads, you will be focused on four main
    chmod 400 ~/.ssh/opsvmspotkeys.pem
    ```
 
+1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
 
@@ -238,6 +240,32 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
    ```bash
    exit
+   ```
+
+### Package the workload
+
+1. Navigate to the sample worker folder
+
+   ```bash
+   cd ./src
+   ```
+
+1. Build the sample workder
+
+   ```bash
+   dotnet build -c Release
+   ```
+
+1. Navigate to the output folder
+
+   ```bash
+   cd ./bin/Release/net6.0/
+   ```
+
+1. Package the worker sample
+
+   ```bash
+   zip -r worker.zip *
    ```
 
 #### Clean up
