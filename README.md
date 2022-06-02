@@ -106,6 +106,18 @@ When building reliable interruptible workloads, you will be focused on four main
 
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
+1. Generate new ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+
+   ```bash
+   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
+   ```
+
+1. Ensure you have **read-only** access to the private key.
+
+   ```bash
+   chmod 400 ~/.ssh/opsvmspotkeys.pem
+   ```
+
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
 
@@ -214,6 +226,18 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
    ```bash
    az deployment group create -g rg-vmspot -f main.bicep
+   ```
+
+1. Valide you can tunnel into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/en-us/azure/virtual-machines/linux-vm-connect?tabs=Linux)
+
+   ```bash
+   az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
+   ```
+
+1. Exit the Spot VM, type the following form the ssh session and press `Enter`
+
+   ```bash
+   exit
    ```
 
 #### Clean up
