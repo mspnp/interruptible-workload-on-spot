@@ -230,19 +230,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az deployment group create -g rg-vmspot -f main.bicep
    ```
 
-1. Valide you can tunnel into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/en-us/azure/virtual-machines/linux-vm-connect?tabs=Linux)
-
-   ```bash
-   az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
-   ```
-
-1. Exit the Spot VM, type the following form the ssh session and press `Enter`
-
-   ```bash
-   exit
-   ```
-
-### Package the workload
+#### Package the workload
 
 1. Navigate to the sample worker folder
 
@@ -274,6 +262,30 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
    ```bash
    az group delete -n rg-vmspot -y
+   ```
+
+### Toublehshooting
+
+#### Remote ssh using Bastion into the Spot VM
+
+1. Ssh into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/en-us/azure/virtual-machines/linux-vm-connect?tabs=Linux)
+
+   ```bash
+   az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
+   ```
+
+#### Manually copy the **worker.zip** file into the Spot VM
+
+1. Open a tunnel using Bastion between your machine and the remote Spot VM
+
+   ```bash
+   az network bastion tunnel -n bh -g rg-vmspot --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv) --resource-port 22 --port 50022
+   ```
+
+1. Copy the file using ssh copy
+
+   ```bash
+   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker.zip azureuser@localhost:~/.
    ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
