@@ -5,8 +5,8 @@ using Azure.Storage.Queues;
 
 public class Worker : BackgroundService
 {
-    private readonly static string s_storageAccountName = "";
-    private readonly static string s_queueName = "";
+    private readonly static string s_storageAccountName = "saworkloadqueue";
+    private readonly static string s_queueName = "messaging";
     private readonly ILogger<Worker> _logger;
 
     public Worker(ILogger<Worker> logger)
