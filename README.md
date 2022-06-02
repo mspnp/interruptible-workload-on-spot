@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This reference implementation provides you with a workload that is meant to guide you to explore the Azure Spot VM/VMSS manage service from a developer perspective to get the fundamentals, and most of the moving parts so you feel comfortable while building your own workload as a next step.
+This reference implementation provides you with a workload that is meant to guide you to explore the Azure Spot VM manage service from a development and architectural perspective to get the fundamentals, and most of the moving parts so you feel comfortable while building your own workload as a next step. As an application architect, you will know how to design a solution to support interruptions. As a developer, you want to use this workload example to reference when writing code.
 
 Azure as major cloud must provision spare capacity along all its offered regions so it can respond on demand when new resources are created. Meanwhile that capacity remains idle, you are given with the chance to [oportuniscally deploy that compute in your subscription at discount prices and capped at **Pay as you go** prices using Azure Spot VM/VMSS](https://azure.microsoft.com/pricing/spot-advisor/).
 
