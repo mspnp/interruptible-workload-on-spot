@@ -100,7 +100,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: true
-        storageUri: 'https://${saVmDiagnostics.name}.blob.core.windows.net/'
+        storageUri: saVmDiagnostics.properties.primaryEndpoints.blob
       }
     }
     priority: 'Spot'
@@ -109,9 +109,6 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
       maxPrice: -1
     }
   }
-  dependsOn: [
-   saVmDiagnostics
-  ]
 }
 
 resource saVmDiagnostics 'Microsoft.Storage/storageAccounts@2021-09-01' = {
