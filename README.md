@@ -130,15 +130,15 @@ Following the steps below will result in the creation of the following Azure res
 | Object                                    | Purpose                                                                                                                                                                                                                                                                          |
 |-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | A Resource Group                          | Contains all of your organization's related networking, and copmute resources.                                                                                                                                                                                                   |
-| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, it's been choosen the size `Standard_D2s_v3` and the vm is assigned with System Managed Identity to give it Azure RBAC permissions as Storage Queue Consumer |
+| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, the `Standard_D2s_v3` size was chosen and the VM is assigned a System Managed Identity to give it Azure RBAC permissions as a Storage Queue Consumer. |
 | A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
 | A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
 | A Spot VM Subnet                          | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
-| A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet allows to apply some NSG rules like open ports such as **22** againt the Spot VM private Ip. |
-| An Azure Bastion                          | The Azure Bastion that securely communicate over internet your local computer with the Azure Spot VM. |
-| A Public IP address                       | The public IP address that allows to communicate with the Azure Spot VM through Azure Bastion. |
+| A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet supports applying NSG rules to support expected traffic flows, like opening port **22** against the Spot VM private IP. |
+| An Azure Bastion                          | The Azure Bastion that allows you to securely communicate with over Internet from your local computer to the Azure Spot VM. |
+| A Public IP address                       | The public IP address of the Azure Bastion host. |
 | A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
-| A Storage Account (queue)                 | The Azure Storage Account that is  employed to enqueue messages that will be later consumed by the interruptible workload.  |
+| A Storage Account (queue)                 | The Azure Storage Account that is a component of the interruptible workload, that represents work to be completed. |
 
 ![Depict the Azure Spot VM infrastructure diagram after deployment](./spot-deploymentdiagram.png)
 
@@ -270,7 +270,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
 #### Remote ssh using Bastion into the Spot VM
 
-1. Ssh into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/en-us/azure/virtual-machines/linux-vm-connect?tabs=Linux)
+1. SSH into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/azure/virtual-machines/linux-vm-connect?tabs=Linux)
 
    ```bash
    az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
@@ -291,5 +291,5 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
-[Azure Retail Prices API]: https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices
-[Azure Scheduled Events]: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/scheduled-events
+[Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
+[Azure Scheduled Events]: https://docs.microsoft.com/azure/virtual-machines/linux/scheduled-events
