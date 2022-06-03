@@ -199,7 +199,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {
   resource snetBastion 'subnets' = {
     name: 'AzureBastionSubnet'
     properties: {
-      addressPrefix: '10.200.0.0/27'
+      addressPrefix: '10.200.0.0/26'
       networkSecurityGroup: {
         id: nsgBastion.id
       }
@@ -209,7 +209,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {
   resource snetSpot 'subnets' = {
     name: 'snet-spot'
     properties: {
-      addressPrefix: '10.200.0.32/27'
+      addressPrefix: '10.200.0.64/27'
     }
   }
 }
