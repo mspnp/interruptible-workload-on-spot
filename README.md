@@ -119,7 +119,7 @@ Following the steps below will result in the creation of the following Azure res
 | A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
 | A Subnet                                  | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
 | A Public IP address                       | The public IP address that allows to communicate with the Azure Spot VM outside the Virtual Network. It means over internet (i.e. from your computer) or within the Azure backbone from other Azure resources.                                                                   |
-| A Storage Account (diagnostics)           | The Azure Storage Account that is  employed to send the Azure Spot VM boot diagsnotics telemetry.  |
+| A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
 
 ![Depict the Azure Spot VM infrastructure diagram after deployment](./spot-deploymentdiagram.png)
 
