@@ -361,7 +361,7 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
 
 // Grant the Azure Spot VM managed identity with Storage Queue Data Message Processor Role permissions.
 resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  scope:saWorkloadQueue
+  scope: saWorkloadQueue::qs::q
   name: guid(resourceGroup().id, 'mi-vmspot', storageQueueDataMessageProcessorRole.id)
   properties: {
     roleDefinitionId: storageQueueDataMessageProcessorRole.id
