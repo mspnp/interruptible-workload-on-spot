@@ -250,7 +250,6 @@ resource bh 'Microsoft.Network/bastionHosts@2021-08-01' = {
   sku: {
     name: 'Standard'
   }
-  dependsOn: []
 }
 
 resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
