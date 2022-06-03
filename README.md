@@ -54,16 +54,16 @@ Some important concepts when building on top of Azure Spot VM instances are:
    			 1. Location: same as in SKU, if your workload can run from any region, it improves the chances to be deployed as well as with less chances of being deallocated if you choose carefully considering the eviction rates. Please take into account that Microsoft Azure China 21Vianet is not supported.
    			 1. Time of the Day, Weekends, Seasons (i.e. Christmas), and other time based considerations are important factors when making a final decision between Azure Spot over regular VMs/VMSS.
    		1. Current VM Price vs Max Price (you set): if you are willing to pay up to the **Pay as you go** rate, it is possible to prevent from being evicted based on price reasons by setting the your **Max Price** to `-1` wich is known as **Eviction Type Capacity Only**. If pricing is a constraint for your business organization goals, **Eviction Type Max Price or Capacity Only** is recommended for you, and in this case you can adjust the right **Max Price** at any moment by taking into account that changing this value requires to deallocate the VM/VMSS first to take effect. If you choose the later, it is good idea to analyze the price history and **Eviction Rate** for the regions you are targeting to.
-   	1. Policy:
-   		 1. Delete
-   		  	1. You free up the Cores from your Subscription, so shared subscriptions or multiple workloads using Azure Spot VM instances can be befitted from this.
-   		  	1. You are not longer charged for the disk as they get deleted along with the Azure Spot VM
-   		 1. Deallocate
-   		  	1. Change VM state to the stopped-deallocated state
-   		  	1. Allowing you to redeploy it later.
-   		  	1. You are still being charge for the underlaying disks
-   		  	1. It consumes Cores quota from your Subscription
-   	1. Simulation: you can [similate an eviction event](https://docs.microsoft.com/azure/virtual-machines/spot-portal#simulate-an-eviction) when Azure needs the capacity back
+   1. Policy:
+   		1. Delete
+   		 	1. You free up the Cores from your Subscription, so shared subscriptions or multiple workloads using Azure Spot VM instances can be befitted from this.
+   		 	1. You are not longer charged for the disk as they get deleted along with the Azure Spot VM
+   		1. Deallocate
+   		 	1. Change VM state to the stopped-deallocated state
+   		 	1. Allowing you to redeploy it later.
+   		 	1. You are still being charge for the underlaying disks
+   		 	1. It consumes Cores quota from your Subscription
+   1. Simulation: it is possible to [similate an eviction event](https://docs.microsoft.com/azure/virtual-machines/spot-portal#simulate-an-eviction) when Azure needs the capacity back. You want to get familiarized with this since it is going to be recommend for you to simulate interruptions from dev/test environments to guarantee your workload is fully interrumptible before deploying to production.
 1. Events: [Azure Scheduled Events] is a metadata service in Azure that signal about forthcoming events associated to the Virtual Machine resource type. The general recommendation when using Virtual Machines is to routinely query this endpoint to discover when maintenance will occur, so you are given the opportunity to prepare for disruption. One of the platform event types being scheduled that you will want to notice is `Preempt` as this signals the imminent eviction of your spot instance. This event is scheduled with a minimum amount of time of 30 seconds in the future. Given that, you must assumme that you are going to have less than that amount of time to limit the impact. The recommended practice in here is to check this endpoint based on the periodicity your workload mandates (i.e. every 10 seconds) to attempt having a gracefully interruption.
 1. Metadata Apis: [Azure Retail Prices API]
 
