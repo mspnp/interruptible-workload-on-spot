@@ -54,20 +54,22 @@ Some important concepts when building on top of Azure Spot VM instances are:
    			 1. Location: same as in SKU, if your workload can run from any region, it improves the chances to be deployed as well as with less chances of being deallocated if you choose carefully considering the eviction rates. Please take into account that Microsoft Azure China 21Vianet is not supported.
    			 1. Time of the Day, Weekends, Seasons (i.e. Christmas), and other time based considerations are important factors when making a final decision between Azure Spot over regular VMs/VMSS.
    		1. Current VM Price vs Max Price (you set): if you are willing to pay up to the **Pay as you go** rate, it is possible to prevent from being evicted based on price reasons by setting the your **Max Price** to `-1` wich is known as **Eviction Type Capacity Only**. If pricing is a constraint for your business organization goals, **Eviction Type Max Price or Capacity Only** is recommended for you, and in this case you can adjust the right **Max Price** at any moment by taking into account that changing this value requires to deallocate the VM/VMSS first to take effect. If you choose the later, it is good idea to analyze the price history and **Eviction Rate** for the regions you are targeting to.
-   	1. Policy:
-   		 1. Delete
-   		  	1. You free up the Cores from your Subscription, so shared subscriptions or multiple workloads using Azure Spot VM instances can be befitted from this.
-   		  	1. You are not longer charged for the disk as they get deleted along with the Azure Spot VM
-   		 1. Deallocate
-   		  	1. Change VM state to the stopped-deallocated state
-   		  	1. Allowing you to redeploy it later.
-   		  	1. You are still being charge for the underlaying disks
-   		  	1. It consumes Cores quota from your Subscription
-   	1. Simulation: it is possible to [similate an eviction event](https://docs.microsoft.com/azure/virtual-machines/spot-portal#simulate-an-eviction) when Azure needs the capacity back. You want to get familiarized with this since it is going to be recommend for you to simulate interruptions from dev/test environments to guarantee your workload is fully interrumptible before deploying to production.
-1. Events: [Azure Scheduled Events](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/scheduled-events) is a metadata service in Azure that signal about forthcoming events associated to the Virtual Machine resource type. The general recommendation when using Virtual Machines is to routinely query this endpoint to discover when maintenance will occur, so you are given the opportunity to prepare for disruption. One of the platform event types being scheduled that you will want to notice is `Preempt` as this signals the imminent eviction of your spot instance. This event is scheduled with a minimum amount of time of 30 seconds in the future. Given that, you must assumme that you are going to have less than that amount of time to limit the impact. The recommended practice in here is to check this endpoint based on the periodicity your workload mandates (i.e. every 10 seconds) to attempt having a gracefully interruption.
-1. Metadata Apis: [Azure retail prices API](https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices).
+   1. Policy:
+   		1. Delete
+   		 	1. You free up the Cores from your Subscription, so shared subscriptions or multiple workloads using Azure Spot VM instances can be befitted from this.
+   		 	1. You are not longer charged for the disk as they get deleted along with the Azure Spot VM
+   		1. Deallocate
+   		 	1. Change VM state to the stopped-deallocated state
+   		 	1. Allowing you to redeploy it later.
+   		 	1. You are still being charge for the underlaying disks
+   		 	1. It consumes Cores quota from your Subscription
+   1. Simulation: it is possible to [similate an eviction event](https://docs.microsoft.com/azure/virtual-machines/spot-portal#simulate-an-eviction) when Azure needs the capacity back. You want to get familiarized with this since it is going to be recommend for you to simulate interruptions from dev/test environments to guarantee your workload is fully interrumptible before deploying to production.
+1. Events: [Azure Scheduled Events] is a metadata service in Azure that signal about forthcoming events associated to the Virtual Machine resource type. The general recommendation when using Virtual Machines is to routinely query this endpoint to discover when maintenance will occur, so you are given the opportunity to prepare for disruption. One of the platform event types being scheduled that you will want to notice is `Preempt` as this signals the imminent eviction of your spot instance. This event is scheduled with a minimum amount of time of 30 seconds in the future. Given that, you must assumme that you are going to have less than that amount of time to limit the impact. The recommended practice in here is to check this endpoint based on the periodicity your workload mandates (i.e. every 10 seconds) to attempt having a gracefully interruption.
+1. Metadata Apis: [Azure Retail Prices API]
 
 ## The Workload
+
+One of well-suited workload types for Azure Spot VM are batch processing apps. This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demostrate how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
 
 ### Planning for being Fault Tolerant
 
@@ -104,6 +106,20 @@ When building reliable interruptible workloads, you will be focused on four main
 
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
+1. Generate new ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+
+   ```bash
+   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
+   ```
+
+1. Ensure you have **read-only** access to the private key.
+
+   ```bash
+   chmod 400 ~/.ssh/opsvmspotkeys.pem
+   ```
+
+1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
 
@@ -114,12 +130,15 @@ Following the steps below will result in the creation of the following Azure res
 | Object                                    | Purpose                                                                                                                                                                                                                                                                          |
 |-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | A Resource Group                          | Contains all of your organization's related networking, and copmute resources.                                                                                                                                                                                                   |
-| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation we have choosen the size `Standard_D2s_v3`                                       |
-| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview) |
+| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, the `Standard_D2s_v3` size was chosen and the VM is assigned a System Managed Identity to give it Azure RBAC permissions as a Storage Queue Consumer. |
+| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
 | A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
-| A Subnet                                  | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
-| A Public IP address                       | The public IP address that allows to communicate with the Azure Spot VM outside the Virtual Network. It means over internet (i.e. from your computer) or within the Azure backbone from other Azure resources.                                                                   |
+| A Spot VM Subnet                          | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
+| A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet supports applying NSG rules to support expected traffic flows, like opening port **22** against the Spot VM private IP. |
+| An Azure Bastion                          | The Azure Bastion that allows you to securely communicate with over Internet from your local computer to the Azure Spot VM. |
+| A Public IP address                       | The public IP address of the Azure Bastion host. |
 | A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
+| A Storage Account (queue)                 | The Azure Storage Account that is a component of the interruptible workload, that represents work to be completed. |
 
 ![Depict the Azure Spot VM infrastructure diagram after deployment](./spot-deploymentdiagram.png)
 
@@ -213,6 +232,32 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az deployment group create -g rg-vmspot -f main.bicep
    ```
 
+#### Package the workload
+
+1. Navigate to the sample worker folder
+
+   ```bash
+   cd ./src
+   ```
+
+1. Build the sample workder
+
+   ```bash
+   dotnet build -c Release
+   ```
+
+1. Navigate to the output folder
+
+   ```bash
+   cd ./bin/Release/net6.0/
+   ```
+
+1. Package the worker sample
+
+   ```bash
+   zip -r worker.zip *
+   ```
+
 #### Clean up
 
 1. Delete the Azure Spot VM resource group
@@ -221,5 +266,30 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az group delete -n rg-vmspot -y
    ```
 
+### Toublehshooting
+
+#### Remote ssh using Bastion into the Spot VM
+
+1. SSH into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/azure/virtual-machines/linux-vm-connect?tabs=Linux)
+
+   ```bash
+   az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
+   ```
+
+#### Manually copy the **worker.zip** file into the Spot VM
+
+1. Open a tunnel using Bastion between your machine and the remote Spot VM
+
+   ```bash
+   az network bastion tunnel -n bh -g rg-vmspot --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv) --resource-port 22 --port 50022
+   ```
+
+1. Copy the file using ssh copy
+
+   ```bash
+   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker.zip azureuser@localhost:~/.
+   ```
+
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
-[Azure Retail Prices API]: https://docs.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices
+[Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
+[Azure Scheduled Events]: https://docs.microsoft.com/azure/virtual-machines/linux/scheduled-events
