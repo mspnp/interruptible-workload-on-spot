@@ -3,23 +3,6 @@ targetScope = 'resourceGroup'
 /*** PARAMETERS ***/
 
 @description('The region for all resources to be deployed into.')
-@allowed([
-  'australiaeast'
-  'canadacentral'
-  'centralus'
-  'eastus'
-  'eastus2'
-  'westus2'
-  'francecentral'
-  'germanywestcentral'
-  'northeurope'
-  'southafricanorth'
-  'southcentralus'
-  'uksouth'
-  'westeurope'
-  'japaneast'
-  'southeastasia'
-])
 param location string = 'eastus2'
 
 @description('The Spot VM pass')
