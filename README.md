@@ -194,7 +194,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```bash
    git clone https://github.com/mspnp/interruptible-workload-on-spot.git
    ```
-1. Navigate to the container-apps-fabrikam-dronedelivery folder
+1. Navigate to the interruptible-workload-on-spot folder
 
    ```bash
    cd ./interruptible-workload-on-spot/
