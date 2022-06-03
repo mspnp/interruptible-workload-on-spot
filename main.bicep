@@ -2,7 +2,7 @@ targetScope = 'resourceGroup'
 
 /*** PARAMETERS ***/
 
-@description('The Azure Spot VM region. This needs to be the same region as the vnet provided in these parameters.')
+@description('The region for all resources to be deployed into.')
 @allowed([
   'australiaeast'
   'canadacentral'
