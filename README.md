@@ -89,7 +89,7 @@ When building reliable interruptible workloads, you will be focused on four main
 
 #### The system states
 
-if you closely look at this reference implementation you will notice it is a Distributed Producer Consumer system type where the interruptible workload is nothing but a batch processing app acting as the consumer. Since you are mainly considering Azure Spot VM to save costs, the recommedation is to look into the issues that may arise in a solution of this kind, such us concurrency problems as shown below, and get them mitigated to avoid wasting compute cycles:
+if you closely look at this reference implementation you will notice it is a Distributed Producer Consumer system type where the interruptible workload is nothing but a batch processing app acting as the consumer. Since you are mainly considering Azure Spot VM to save costs, the recommendation is to look into the issues that may arise in a solution of this kind, such as concurrency problems as shown below, and get them mitigated to avoid wasting compute cycles:
 
 1. Deadlock
 1. Starvation
