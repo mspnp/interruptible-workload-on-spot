@@ -73,6 +73,8 @@ One of well-suited workload types for Azure Spot VM are batch processing apps. T
 
 ### Planning for being Fault Tolerant
 
+#### The application states
+
 When building reliable interruptible workloads, you will be focused on four main stages during their lifecycle that will derive into changes of states within your application:
 
 1. Start: after the application `warmup` state is completed, you could consider internally transitioning into `processing` state. An important aspect to contemplate is a previous forced shutdown having as side effect some incomplete processing, so the recommendation is to implement idempotency when applicable. Additionally, it is a good practice to save the context by creating checkpoints regularly. This enables a more efficient recovery strategy which is recover from the latest well-known checkpoint instead of starting all over the processing again.
@@ -84,6 +86,42 @@ When building reliable interruptible workloads, you will be focused on four main
 
 > **Note**
 > The aforementioned states are just a reduced list of possible valid conditions for an reliable interruptible workload. You might find others that are convenient for your own workloads.
+
+#### The system states
+
+if you closely look at this reference implementation you will notice it is a Distributed Producer Consumer system type where the interruptible workload is nothing but a batch processing app acting as the consumer. Since you are mainly considering Azure Spot VM to save costs, the recommendation is to look into the issues that may arise in a solution of this kind, such as concurrency problems as shown below, and get them mitigated to avoid wasting compute cycles:
+
+1. Deadlock
+1. Starvation
+
+As a general recommendation, you must always take into account edge cases and common pitfalls associated to the system types you are building, and design their architectures to be good citizens while running on top of Azure Spot VMs.
+
+> **Note**
+> This reference implementation follows the simple concurrency stragey: **Do-Nothing**. Please note that you are going to deploy a single interruptible workload instance (consumer), and produce a moderate and discrete amount of messages. Therefore, expect no `Deadlock` neither `Starvation` as eventual system valid states while running it. While a specific recommendation could be to prevent your system from running into such states, you could consider handling them if detected at the **Orchestration** time as another mitigation strategy. But this is out of scope from this reference implementation.
+
+#### The Orchestration
+
+As this is aforementioned in the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused specifically on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is executing the worker app at the VM start up time.
+
+This is going to be really helpful to kick off the application after eviction or first time the Azure Spot VM gets deployed. This way, the application will be able to continue processing messages without human intervention from the queue once started. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
+
+By design, this is a [bash script](./orchestrate.sh) running after the machine is started up, so it downloads the workload package from an Azure Storage Account for file shares, uncompress and execute the process.
+
+![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
+
+Another important orquestration related aspect is to understand how to scale your workload within a single VM instance, so it is more resource efficient.
+
+**Scale up strategy**
+
+In this case your workload is built with no artificial constraints, and will grow to consume available resources in your VM instance without exhausting them. From the orchestration point of view, you want to ensure that it is running a SINGLETON of the workload and let this organically request resources as designed.
+
+![Depict the Azure Spot VM infrastructure orchestration scale up strategy](./spot-orchestrationscaleupdiagram.png)
+
+**Scale out strategy**
+
+Alternatively, if the workload resources specs are limited by design, or in other words this can not grow to consume VM resources, ensure you right size the VM to orchestrate one or more whole instances (multiple) of your workload, so there is no wasted over provisioning of compute in your Spot VM.
+
+![Depict the Azure Spot VM infrastructure orchestration scale out strategy](./spot-orchestrationscaleoutdiagram.png)
 
 ### Installation
 
@@ -140,7 +178,7 @@ Following the steps below will result in the creation of the following Azure res
 | A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
 | A Storage Account (queue)                 | The Azure Storage Account that is a component of the interruptible workload, that represents work to be completed. |
 
-![Depict the Azure Spot VM infrastructure diagram after deployment](./spot-deploymentdiagram.png)
+![Depict the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
 
 > **Note**
 > :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
