@@ -87,7 +87,7 @@ When building reliable interruptible workloads, you will be focused on four main
 > **Note**
 > The aforementioned states are just a reduced list of possible valid conditions for an reliable interruptible workload. You might find others that are convenient for your own workloads.
 
-### The system states
+#### The system states
 
 if you closely look at this reference implementation you will notice it is a Distributed Producer Consumer system type where the interruptible workload is nothing but a batch processing app acting as the consumer. Since you are mainly considering Azure Spot VM to save costs, the recommedation is to look into the issues that may arise in a solution of this kind, such us concurrency problems as shown below, and get them mitigated to avoid wasting compute cycles:
 
@@ -97,7 +97,7 @@ if you closely look at this reference implementation you will notice it is a Dis
 As a general recommendation, you must always take into account edge cases and common pitfalls associated to the system types you are building, and design their architectures to be good citizens while running on top of Azure Spot VMs.
 
 > **Note**
-> This reference implementation follows the simple concurrency stragey: **Do-Nothing**. Please note that you are going to deploy a single interruptible workload instance (consumer), and produce a moderate and discrete amount of messages. Therefore, expect no 'Deadlock` neither `Starvation` as eventual system valid states while running it. While a specific recommendation could be to prevent your system from running into such states, you could consider handling them if detected at the **Orchestration** time as another mitigation strategy. But this is out of scope from this reference implementation.
+> This reference implementation follows the simple concurrency stragey: **Do-Nothing**. Please note that you are going to deploy a single interruptible workload instance (consumer), and produce a moderate and discrete amount of messages. Therefore, expect no `Deadlock` neither `Starvation` as eventual system valid states while running it. While a specific recommendation could be to prevent your system from running into such states, you could consider handling them if detected at the **Orchestration** time as another mitigation strategy. But this is out of scope from this reference implementation.
 
 #### The Orchestration
 
