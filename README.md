@@ -103,7 +103,7 @@ As a general recommendation, you must always take into account edge cases and co
 
 As this is aforementioned in the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused specifically on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is executing the worker app at the VM start up time.
 
-This is going to be really helpful to kick off the application after eviction or first time the Azure Spot VM gets deployed. This way, the application will be able to continue processing messages without human intervention from the queue once started. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](The-application-states).
+This is going to be really helpful to kick off the application after eviction or first time the Azure Spot VM gets deployed. This way, the application will be able to continue processing messages without human intervention from the queue once started. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
 
 By design, this is a [bash script](./orchestrate.sh) running after the machine is started up, so it downloads the workload package from an Azure Storage Account for file shares, uncompress and execute the process.
 
