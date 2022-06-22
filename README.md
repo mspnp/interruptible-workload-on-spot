@@ -109,6 +109,20 @@ By design, this is a [bash script](./orchestrate.sh) running after the machine i
 
 ![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
 
+Another important orquestration related aspect is to understand how to scale your workload within a single VM instance, so it is more resource efficient.
+
+**Scale up strategy**
+
+In this case your workload is built with no artificial constraints, and will grow to consume available resources in your VM instance without exhausting them. From the orchestration point of view, you want to ensure that it is running a SINGLETON of the workload and let this organically request resources as designed.
+
+![Depict the Azure Spot VM infrastructure orchestration scale up strategy](./spot-orchestrationscaleupdiagram.png)
+
+**Scale out strategy**
+
+Alternatively, if the workload resources specs are limited by design, or in other words this can not grow to consume VM resources, ensure you right size the VM to orchestrate one or more whole instances (multiple) of your workload, so there is no wasted over provisioning of compute in your Spot VM.
+
+![Depict the Azure Spot VM infrastructure orchestration scale out strategy](./spot-orchestrationscaleoutdiagram.png)
+
 ### Installation
 
 #### Prerequisites
