@@ -358,6 +358,39 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
 }
 
+resource saVmApps 'Microsoft.Storage/storageAccounts@2021-09-01' = {
+  name: 'savmapps'
+  location: location
+  kind: 'Storage'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    allowBlobPublicAccess: true
+  }
+
+  resource bs 'blobServices' = {
+    name: 'default'
+
+    resource c 'containers' = {
+      name: 'apps'
+    }
+  }
+}
+
+resource ga 'Microsoft.Compute/galleries@2022-01-03' = {
+  name: 'ga'
+  location: location
+
+  resource app 'applications' = {
+    name: 'app'
+    location: location
+    properties: {
+      description: 'Worker App'
+      supportedOSType: 'Linux'
+    }
+  }
+}
 
 // Grant the Azure Spot VM managed identity with Storage Queue Data Message Processor Role permissions.
 resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
