@@ -364,7 +364,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
    ```
 
-#### Manually copy the **worker.zip** file into the Spot VM
+#### Manually copy the **worker-0.1.0.tar.gz** file into the Spot VM
 
 1. Open a tunnel using Bastion between your machine and the remote Spot VM
 
@@ -375,7 +375,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Copy the file using ssh copy
 
    ```bash
-   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker.zip azureuser@localhost:~/.
+   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
