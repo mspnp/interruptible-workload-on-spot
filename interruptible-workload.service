@@ -1,0 +1,12 @@
+[Unit]
+Description=Interruptible Workload
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/usr/share/worker-0.1.0
+ExecStart=/usr/share/worker-0.1.0/interruptible-workload
+
+[Install]
+WantedBy=multi-user.target

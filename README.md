@@ -290,11 +290,18 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    cd ./bin/Release/net6.0/
    ```
 
+1. Copy the systemd configuration file
+
+   ```bash
+   cp ../../../../interruptible-workload.service .
+   ```
+
 1. Package the worker sample
 
    ```bash
    tar -czf ../../../../worker-0.1.0.tar.gz *
    ```
+
 #### Upload the packaged workload, and the orchestration script
 
 1. Upload the package to the container apps
@@ -312,7 +319,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Edit your `orchestrate.sh` to add the Storage Account Worker Uri
 
    ```bash
-   sed -i "s#\(SA_WORKER_URI=\)#\1'${saWorkerUri//&/\\&}'#g" ../../../../orchestrate.sh
+   sed -i "s#\(SA_WORKER_URI=\)#\1'${saWorkerUri//&/\\&}';#g" ../../../../orchestrate.sh
    ```
 
 1. Upload the package to the container apps
@@ -332,7 +339,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Publish the version **0.1.0** of the orchestration worker app
 
    ```bash
-   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saOrchestrationUri --install-command "/var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -install" --remove-command "rm -rf /usr/share/worker-0.1.0"
+   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saOrchestrationUri --install-command "/var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -i" --remove-command "/var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -u"
    ```
 
 #### Set a VM application to the Spot VM
@@ -345,6 +352,10 @@ At this point, you have learnt that as an Architect you are tasked at being flex
       --name vm-spot \
       --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
    ```
+
+   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
+
+   ![Interruptible Workload service status.](./output.png)
 
 #### Clean up
 
