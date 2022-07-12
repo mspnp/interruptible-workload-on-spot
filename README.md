@@ -330,7 +330,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Publish the version **0.1.0** of the orchestration worker app
 
    ```bash
-   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf /var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
+   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf ./app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
    ```
 
 #### Set a VM application to the Spot VM
@@ -338,15 +338,33 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Assign the **worker 0.1.0** VM app to the Spot VM
 
    ```bash
-   az vm application set \
-      --resource-group rg-vmspot \
-      --name vm-spot \
-      --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
+   az vm application set --resource-group rg-vmspot --name vm-spot --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
    ```
 
    After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
 
    ![Interruptible Workload service status.](./output.png)
+
+#### Simulate en Eviction Event
+
+1. Test your Spot VM and see how the interruptible workload respond to disruption
+
+   ```bash
+   az rest --method post --uri /subscriptions/{subscriptionId}/resourceGroups/rg-vmspot/providers/Microsoft.Compute/virtualMachines/vm-spot/simulateEviction?api-version=2020-06-01
+   ```
+
+   You can see from the logs eleven seconds after the infrastructure **Preempt** event is triggered how the interrumptible workload is noticed as this hosts a service to query every ten seconds the Azure Scheduled Event metadata endpoint
+
+   ![Interruptible Workload service is noticed about a maintanance event that happens to be the **Preempt** that corresponds to an infrastructure eviction event type.](./eviction.png)
+
+1. Start the stopped Spot VM.
+
+   ```bash
+   az vm start --resource-group rg-vmspot --name vm-spot
+   ```
+
+   > **Note**
+   > If you remote ssh the VM you could confirm the Interruptible Workload service is now started and running again.
 
 #### Clean up
 

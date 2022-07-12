@@ -14,6 +14,9 @@ IHost host = Host.CreateDefaultBuilder(args)
               new Uri($"https://saworkloadqueue.queue.core.windows.net/messaging"),
               new DefaultAzureCredential()));
         });
+
+        services.AddHostedService<ScheduledEvents>();
+        services.AddHttpClient<ScheduledEvents>();
     })
     .Build();
 
