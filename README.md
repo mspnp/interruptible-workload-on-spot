@@ -296,6 +296,12 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    cp ../../../../interruptible-workload.service .
    ```
 
+1. Copy the orchestration file
+
+   ```bash
+   cp ../../../../orchestrate.sh .
+   ```
+
 1. Package the worker sample
 
    ```bash
@@ -316,30 +322,12 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    saWorkerUri=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
    ```
 
-1. Edit your `orchestrate.sh` to add the Storage Account Worker Uri
-
-   ```bash
-   sed -i "s#\(SA_WORKER_URI=\)#\1'${saWorkerUri//&/\\&}';#g" ../../../../orchestrate.sh
-   ```
-
-1. Upload the package to the container apps
-
-   ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name orchestrate-0.1.0.sh --file ../../../../orchestrate.sh
-   ```
-
-1. Generate a valid SAS uri expiring in seven days for the orchestration script
-
-   ```bash
-   saOrchestrationUri=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name orchestrate-0.1.0.sh --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
-   ```
-
 #### Publish the packaged workload and get a valid SAS uri
 
 1. Publish the version **0.1.0** of the orchestration worker app
 
    ```bash
-   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saOrchestrationUri --install-command "/var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -i" --remove-command "/var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -u"
+   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf /var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
    ```
 
 #### Set a VM application to the Spot VM
