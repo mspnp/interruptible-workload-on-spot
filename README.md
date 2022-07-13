@@ -101,11 +101,11 @@ As a general recommendation, you must always take into account edge cases and co
 
 #### The Orchestration
 
-As this is aforementioned in the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused specifically on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is executing the worker app at the VM start up time.
+As this is aforementioned from the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is enabling .NET worker application as a service as well as starting it for the first time.
 
-This is going to be really helpful to kick off the application after eviction or first time the Azure Spot VM gets deployed. This way, the application will be able to continue processing messages without human intervention from the queue once started. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
+This archestration appraach in which the interruptible workload is installed as a service is going to be really helpful to let the operating system get this automatically started when Spot VM starts up. This way, the application will be able to continue processing messages without human intervention after eviction. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
 
-By design, this is a [bash script](./orchestrate.sh) running after the machine is started up, so it downloads the workload package from an Azure Storage Account for file shares, uncompress and execute the process.
+By design, this is a [bash script](./orchestrate.sh) that is executed by using VM Aapplications. This Azure resource allows to publish and distrubute specific application versions for a particular VM. Once it is set, it downloads an Azure Blob Storage file containing the interruptible workload package. The package is uncompressed using the installation command, and execute the `orchestrate.sh` within it.
 
 ![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
 
