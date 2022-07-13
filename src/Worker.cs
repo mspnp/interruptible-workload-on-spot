@@ -1,17 +1,16 @@
 namespace interruptible_workload;
 
-using Azure.Identity;
 using Azure.Storage.Queues;
 
 public class Worker : BackgroundService
 {
-    private readonly static string s_storageAccountName = "saworkloadqueue";
-    private readonly static string s_queueName = "messaging";
     private readonly ILogger<Worker> _logger;
+    private readonly QueueClient _queueClient;
 
-    public Worker(ILogger<Worker> logger)
+    public Worker(ILogger<Worker> logger, QueueClient queueClient)
     {
         _logger = logger;
+        _queueClient = queueClient;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -21,15 +20,11 @@ public class Worker : BackgroundService
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             await Task.Delay(1000, stoppingToken);
 
-            var queueClient = new QueueClient(
-              new Uri($"https://{s_storageAccountName}.queue.core.windows.net/{s_queueName}"),
-              new DefaultAzureCredential());
-
-            foreach (var message in (await queueClient.ReceiveMessagesAsync(maxMessages: 10)).Value)
+            foreach (var message in (await _queueClient.ReceiveMessagesAsync(maxMessages: 10)).Value)
             {
                 Console.WriteLine($"Message: {message.Body}");
 
-                await queueClient.DeleteMessageAsync(
+                await _queueClient.DeleteMessageAsync(
                   message.MessageId,
                   message.PopReceipt);
             }
