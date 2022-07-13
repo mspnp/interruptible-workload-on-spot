@@ -17,7 +17,8 @@ public class ScheduledEvents: BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ScheduledEvents running at: {time}", DateTimeOffset.Now);
+        _logger.LogInformation("ScheduledEvents running at: {time}", DateTimeOffset.UtcNow);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             Console.WriteLine($"ScheduledEvents: {_httpClient.BaseAddress}");
