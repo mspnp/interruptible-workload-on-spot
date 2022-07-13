@@ -109,6 +109,9 @@ By design, this is a [bash script](./orchestrate.sh) that is executed by using V
 
 ![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
 
+>**Note**
+>Althought this Reference Implmentation will walkthrought the process of packaging, publishing and distributing a single app, this is prescribed as one time activity following a set of step by step instructions. Whereas in productive systems, you will want to deploy many times to production within a day, week or month depending on how often the team agrees upon that, manage multiple revision/versions and applications. That being said, it is recommended for you to implement CI/CD pipelines to automate this or implement any other practice your orgazation typically follows to install applications.
+
 Another important orquestration related aspect is to understand how to scale your workload within a single VM instance, so it is more resource efficient.
 
 **Scale up strategy**
