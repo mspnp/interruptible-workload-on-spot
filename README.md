@@ -101,13 +101,16 @@ As a general recommendation, you must always take into account edge cases and co
 
 #### The Orchestration
 
-As this is aforementioned in the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused specifically on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is executing the worker app at the VM start up time.
+As this is aforementioned from the previous section, the orchestration can be scoped to coordinate at the application level or go beyond, and implement broader capabilities like system recovery as you see fit. Whereas, this reference implementation is focused on scheduling the interruptible workload into the Azure Spot VM operating system. In other words, it is enabling .NET worker application as a service as well as starting it for the first time.
 
-This is going to be really helpful to kick off the application after eviction or first time the Azure Spot VM gets deployed. This way, the application will be able to continue processing messages without human intervention from the queue once started. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
+This archestration appraach in which the interruptible workload is installed as a service is going to be really helpful to let the operating system get this automatically started when Spot VM starts up. This way, the application will be able to continue processing messages without human intervention after eviction. Once the application is running it will transition the `Recover` -> `Resume` -> `Start` [application states](#the-application-states).
 
-By design, this is a [bash script](./orchestrate.sh) running after the machine is started up, so it downloads the workload package from an Azure Storage Account for file shares, uncompress and execute the process.
+By design, this is a [bash script](./orchestrate.sh) that is executed by using VM Aapplications. This Azure resource allows to publish and distrubute specific application versions for a particular VM. Once it is set, it downloads an Azure Blob Storage file containing the interruptible workload package. The package is uncompressed using the installation command, and execute the `orchestrate.sh` within it.
 
 ![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
+
+>**Note**
+>Althought this Reference Implmentation will walkthrought the process of packaging, publishing and distributing a single app, this is prescribed as one time activity following a set of step by step instructions. Whereas in productive systems, you will want to deploy many times to production within a day, week or month depending on how often the team agrees upon that, manage multiple revision/versions and applications. That being said, it is recommended for you to implement CI/CD pipelines to automate this or implement any other practice your orgazation typically follows to install applications.
 
 Another important orquestration related aspect is to understand how to scale your workload within a single VM instance, so it is more resource efficient.
 
@@ -267,7 +270,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Create the Azure Spot VM deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus
    ```
 
 #### Package the workload
@@ -290,11 +293,60 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    cd ./bin/Release/net6.0/
    ```
 
+1. Copy the systemd configuration file
+
+   ```bash
+   cp ../../../../interruptible-workload.service .
+   ```
+
+1. Copy the orchestration file
+
+   ```bash
+   cp ../../../../orchestrate.sh .
+   ```
+
 1. Package the worker sample
 
    ```bash
-   zip -r worker.zip *
+   tar -czf ../../../../worker-0.1.0.tar.gz *
    ```
+
+#### Upload the packaged workload, and the orchestration script
+
+1. Upload the package to the container apps
+
+   ```bash
+   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file ../../../../worker-0.1.0.tar.gz
+   ```
+
+1. Generate a valid SAS uri expiring in seven days packaged workload
+
+   ```bash
+   saWorkerUri=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
+   ```
+
+#### Publish the packaged workload and get a valid SAS uri
+
+1. Publish the version **0.1.0** of the orchestration worker app
+
+   ```bash
+   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf /var/lib/waagent/Microsoft.CPlat.Core.VMApplicationManagerLinux/app/0.1.0/app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
+   ```
+
+#### Set a VM application to the Spot VM
+
+1. Assign the **worker 0.1.0** VM app to the Spot VM
+
+   ```bash
+   az vm application set \
+      --resource-group rg-vmspot \
+      --name vm-spot \
+      --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
+   ```
+
+   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
+
+   ![Interruptible Workload service status.](./output.png)
 
 #### Clean up
 
@@ -314,7 +366,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
    ```
 
-#### Manually copy the **worker.zip** file into the Spot VM
+#### Manually copy the **worker-0.1.0.tar.gz** file into the Spot VM
 
 1. Open a tunnel using Bastion between your machine and the remote Spot VM
 
@@ -325,7 +377,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Copy the file using ssh copy
 
    ```bash
-   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker.zip azureuser@localhost:~/.
+   scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
