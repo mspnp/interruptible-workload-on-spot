@@ -22,10 +22,15 @@ public class ScheduledEvents: BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             Console.WriteLine($"ScheduledEvents: {_httpClient.BaseAddress}");
-            var response = await _httpClient.GetAsync("scheduledevents?api-version=2020-07-01");
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(content);
+            try
+            {
+              var response = await _httpClient.GetAsync("scheduledevents?api-version=2020-07-01");
+              response.EnsureSuccessStatusCode();
+              var content = await response.Content.ReadAsStringAsync();
+              Console.WriteLine(content);
+            }
+            catch {}
+
             await Task.Delay(10000, stoppingToken);
         }
     }
