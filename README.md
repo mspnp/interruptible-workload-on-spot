@@ -284,31 +284,31 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Build the sample workder
 
    ```bash
-   dotnet build -c Release
+   dotnet build -c Release --self-contained --os linux
    ```
 
 1. Navigate to the output folder
 
    ```bash
-   cd ./bin/Release/net6.0/
+   cd ./bin/Release/net6.0/linux-x64
    ```
 
 1. Copy the systemd configuration file
 
    ```bash
-   cp ../../../../interruptible-workload.service .
+   cp ../../../../../interruptible-workload.service .
    ```
 
 1. Copy the orchestration file
 
    ```bash
-   cp ../../../../orchestrate.sh .
+   cp ../../../../../orchestrate.sh .
    ```
 
 1. Package the worker sample
 
    ```bash
-   tar -czf ../../../../worker-0.1.0.tar.gz *
+   tar -czf ../../../../../worker-0.1.0.tar.gz *
    ```
 
 #### Upload the packaged workload, and the orchestration script
@@ -316,7 +316,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Upload the package to the container apps
 
    ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file ../../../../worker-0.1.0.tar.gz
+   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file ../../../../../worker-0.1.0.tar.gz
    ```
 
 1. Generate a valid SAS uri expiring in seven days packaged workload
