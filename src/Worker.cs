@@ -30,4 +30,10 @@ public class Worker : BackgroundService
             }
         }
     }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+      _logger.LogInformation("Gracefull Shutdown...");
+      await base.StopAsync(cancellationToken);
+    }
 }
