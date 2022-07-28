@@ -2,8 +2,8 @@
 Description=Interruptible Workload
 
 [Service]
-Type=simple
-Restart=always
+Type=exec
+Restart=no
 RestartSec=5s
 WorkingDirectory=/usr/share/worker-0.1.0
 ExecStart=/usr/share/worker-0.1.0/interruptible-workload

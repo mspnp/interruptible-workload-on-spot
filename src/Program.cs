@@ -15,9 +15,10 @@ IHost host = Host.CreateDefaultBuilder(args)
               new DefaultAzureCredential()));
         });
 
+        services.AddSingleton<IScheduledEventsService, ScheduledEventsService>();
         services.AddHostedService<ScheduledEvents>();
         services.AddHttpClient<ScheduledEvents>();
     })
     .Build();
-
+// Start processing
 await host.RunAsync();
