@@ -17,18 +17,18 @@ public class Worker : BackgroundService
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[recover] ->");
+        _logger.LogInformation("* -> [recover] -> [resume] ...");
         await base.StartAsync(cancellationToken);
-        _logger.LogInformation("[resume] ->");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("[start] ->");
+        _logger.LogInformation("* -> [recover] -> [resume] -> [start] -> ...");
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                _logger.LogInformation("attemp to receive messages from queue");
                 await Task.Delay(1000, stoppingToken);
                 foreach (var message in (await _queueClient.ReceiveMessagesAsync(
                     maxMessages: 10,
@@ -52,7 +52,7 @@ public class Worker : BackgroundService
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[shutdown] ->");
+        _logger.LogInformation("* -> [recover] -> [resume] -> [start] -> [shutdown] -> *");
         await base.StopAsync(cancellationToken);
         _logger.LogInformation("gracefull shutdown OK...");
     }
