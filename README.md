@@ -145,9 +145,8 @@ Alternatively, if the workload resources specs are limited by design, or in othe
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
-1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
-1. Generate new ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
    ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
@@ -159,7 +158,13 @@ Alternatively, if the workload resources specs are limited by design, or in othe
    chmod 400 ~/.ssh/opsvmspotkeys.pem
    ```
 
+1. (Optional | Local Development) [Docker](https://docs.docker.com/)
+
+1. (Optional | Local Development) [OpenSSL](https://www.openssl.org/)
+
 1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+
+1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
@@ -259,6 +264,81 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```bash
    cd ./interruptible-workload-on-spot/
    ```
+
+#### (Optional | Local Development) Execute the Interruptible Workload locally
+
+You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-spot-vm).
+
+1. Generate a new self signed certificate to be able to listen over https when using [Azurite emulator for local Azure Storage development](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=docker-hub):
+
+   ```bash
+   mkdir certs \
+   && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ../certs/127.0.0.1-azurite.key -out ../certs/127.0.0.1-azurite.crt -addext "subjectAltName=IP:127.0.0.1" -subj "/C=CO/ST=ST/L=LO/O=OR/OU=OU/CN=CN" --passout pass: \
+   && openssl pkcs12 -export -out ../certs/127.0.0.1-azurite.pfx -inkey ../certs/127.0.0.1-azurite.key -in ../certs/127.0.0.1-azurite.crt --passout pass:  \
+   && sudo cp ../certs/127.0.0.1-azurite.crt /usr/local/share/ca-certificates \
+   && sudo update-ca-certificates \
+   && openssl verify /usr/local/share/ca-certificates/127.0.0.1-azurite.crt \
+   && cp /etc/ssl/certs/127.0.0.1-azurite.pem ../certs
+   ```
+
+   > **Note**
+   > The instructions provided above must be used only for development purposes.
+
+   > **Note**
+   > Listening over https is required by Azurite emulator to enable OAuth support as well as trusting the self signed cert to be able to make secure calls using the SDK in development
+
+   > **Warning**
+   > The instructions provided above are valid for Ubuntu machines or WLS, while you could opt to use `dotnet dev-certs` if you are in Windows or MacOS. For more information, please let's take a look at https://github.com/Azure/Azurite#pfx
+
+1. Run Azurite emulator for local Azure Storage Qeuee developmet
+
+   ```bash
+   docker run -d -v $(pwd)/certs:/workspace -p 10001:10001 --net="host" mcr.microsoft.com/azure-storage/azurite azurite-queue --queueHost 0.0.0.0 --oauth basic --cert /workspace/127.0.0.1-azurite.pem --key /workspace/127.0.0.1-azurite.key --debug /workspace/debug.log --loose --skipApiVersionCheck --disableProductStyleUrl
+   ```
+
+1. Setup the Azure Storage Queue using the REST Apis
+
+   Set the http headers
+
+   ```bash
+   x_ms_date="x-ms-date:$(TZ=GMT date "+%a, %d %h %Y %H:%M:%S %Z")"
+   x_ms_version="x-ms-version:2021-08-06"
+   ```
+
+   Create a shared key signature for the create queue endpoint
+
+   ```bash
+   signature_create_queue=$(printf "PUT\n\n\n\n\n\n\n\n\n\n\n\n${x_ms_date}\n${x_ms_version}\n/devstoreaccount1/devstoreaccount1/messaging" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$(printf 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' | base64 -d -w0 | xxd -p -c256)" -binary |  base64 -w0)
+   ```
+
+   Make a http call to create the Azure Storage Queue named **messaging**
+
+   ```bash
+   curl -X PUT -k -v -H "${x_ms_date}" -H "${x_ms_version}" -H "Authorization: SharedKey devstoreaccount1:$signature_create_queue" https://127.0.0.1:10001/devstoreaccount1/messaging
+   ```
+
+   Create a shared key signature for the create queue message endpoint
+
+   ```bash
+   signature_create_queue_messages=$(printf "POST\n\n\n67\n\napplication/x-www-form-urlencoded\n\n\n\n\n\n\n${x_ms_date}\n${x_ms_version}\n/devstoreaccount1/devstoreaccount1/messaging/messages" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$(printf 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' | base64 -d -w0 | xxd -p -c256)" -binary |  base64 -w0)
+   ```
+
+   Generate **100** messages
+
+   ```bash
+   for i in {1..100}; do curl -X POST -k -v -H "${x_ms_date}" -H "${x_ms_version}" -H "Authorization: SharedKey devstoreaccount1:$signature_create_queue_messages" https://127.0.0.1:10001/devstoreaccount1/messaging/messages -d '<QueueMessage><MessageText>Hello World</MessageText></QueueMessage>';done;
+   ```
+
+1. Run the worker application
+
+   ```bash
+   dotnet run --project src/
+   ```
+
+   > **Note**
+   > When runnning in **Develoment** mode after querying 10 times the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
+
+
 #### Deploy the Azure Spot VM
 
 1. Create the Azure Spot VM resource group
@@ -275,34 +355,22 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
 #### Package the workload
 
-1. Navigate to the sample worker folder
-
-   ```bash
-   cd ./src
-   ```
-
 1. Build the sample workder
 
    ```bash
-   dotnet build -c Release --self-contained --os linux
-   ```
-
-1. Navigate to the output folder
-
-   ```bash
-   cd ./bin/Release/net6.0/linux-x64
+   dotnet build ./src -c Release --self-contained --os linux -o worker
    ```
 
 1. Copy the systemd configuration file
 
    ```bash
-   cp ../../../../../interruptible-workload.service .
+   cp interruptible-workload.service worker/.
    ```
 
 1. Copy the orchestration file
 
    ```bash
-   cp ../../../../../orchestrate.sh .
+   cp orchestrate.sh worker/.
    ```
 
    > *Note*
@@ -322,7 +390,10 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Package the worker sample
 
    ```bash
-   tar -czf ../../../../../worker-0.1.0.tar.gz *
+   pushd ./worker
+   tar -czf ../worker-0.1.0.tar.gz *
+   popd
+   rm -rf worker/
    ```
 
 #### Upload the packaged workload, and the orchestration script
@@ -330,7 +401,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Upload the package to the container apps
 
    ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file ../../../../../worker-0.1.0.tar.gz
+   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
    ```
 
 1. Generate a valid SAS uri expiring in seven days packaged workload
