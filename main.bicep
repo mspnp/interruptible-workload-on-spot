@@ -403,4 +403,15 @@ resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsof
   }
 }
 
+resource ai 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'aiworkload'
+  location: 'westus2'
+  kind: 'other'
+  properties: {
+    Application_Type: 'other'
+  }
+}
+
 /*** OUTPUTS ***/
+
+output aiConnectionString string = ai.properties.ConnectionString

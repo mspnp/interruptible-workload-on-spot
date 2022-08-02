@@ -1,18 +1,22 @@
-namespace interruptible_workload;
+using Microsoft.ApplicationInsights;
 
+namespace interruptible_workload;
 public class ScheduledEvents: BackgroundService
 {
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<ScheduledEvents> _logger;
+    private readonly TelemetryClient _telemetryClient;
     private readonly IScheduledEventsService _scheduledEventsService;
 
     public ScheduledEvents(
         IHostApplicationLifetime lifetime,
         ILogger<ScheduledEvents> logger,
+        TelemetryClient tc,
         IScheduledEventsService scheduledEventsService)
     {
         _lifetime = lifetime;
         _logger = logger;
+        _telemetryClient = tc;
         _scheduledEventsService = scheduledEventsService;
     }
 
@@ -29,7 +33,8 @@ public class ScheduledEvents: BackgroundService
                         e.EventType == "Preempt" 
                         && e.Resources.Any(r => r == "vm-spot")))
                 {
-                    _logger.LogWarning("eviction noticed");
+                    _logger.LogWarning("Azure infrastructure is requesting to stop this VM instance");
+                    _telemetryClient.TrackTrace("Eviction Noticed");
                     _lifetime.StopApplication();
                     return;
                 }

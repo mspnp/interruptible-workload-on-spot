@@ -305,6 +305,20 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    cp ../../../../../orchestrate.sh .
    ```
 
+   > *Note*
+   > Once the interruptible workload package gets downloaded into the Spot VM usgin VM Applications, this file will be executed to kick off the orchestration. The orquestration consist on ensuring a single interruptible workload instance by installing this as a service into the VM, and right after start the service for the first time.
+
+1. Embed the Azure Application Insights Connection String
+
+   ```bash
+   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n main --query properties.outputs.aiConnectionString.value -o tsv)
+
+   sed -i "s#\(ConnectionString\" : \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
+   ```
+
+   > **Note**
+   > The general recommendation is not to embed secrets in your application but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
+
 1. Package the worker sample
 
    ```bash
@@ -353,9 +367,11 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az rest --method post --uri /subscriptions/{subscriptionId}/resourceGroups/rg-vmspot/providers/Microsoft.Compute/virtualMachines/vm-spot/simulateEviction?api-version=2020-06-01
    ```
 
-   You can see from the logs eleven seconds after the infrastructure **Preempt** event is triggered how the interrumptible workload is noticed as this hosts a service to query every ten seconds the Azure Scheduled Event metadata endpoint
+1. Validate the interruptible workload gracefully shutdown by looking at the tracing data in Azure Monitor
 
-   ![Interruptible Workload service is noticed about a maintanance event that happens to be the **Preempt** that corresponds to an infrastructure eviction event type.](./eviction.png)
+   ```bash
+   az monitor app-insights query -g rg-vmspot --app aiworkload --analytics-query 'traces | project timestamp, message | order by timestamp' --offset 0h10m --query "tables[0].rows"
+   ```
 
 1. Start the stopped Spot VM.
 

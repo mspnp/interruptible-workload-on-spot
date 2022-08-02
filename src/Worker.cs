@@ -1,17 +1,21 @@
-namespace interruptible_workload;
-
 using Azure.Storage.Queues;
+using Microsoft.ApplicationInsights;
+
+namespace interruptible_workload;
 
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
+    private readonly TelemetryClient _telemetryClient;
     private readonly QueueClient _queueClient;
 
     public Worker(
         ILogger<Worker> logger,
+        TelemetryClient tc,
         QueueClient queueClient)
     {
         _logger = logger;
+        _telemetryClient = tc;
         _queueClient = queueClient;
     }
 
@@ -35,14 +39,13 @@ public class Worker : BackgroundService
         // After this point the appliation must be ready to start processing 
         // messages after doing a best effort to recover from a previous checkpoint
         _logger.LogInformation("* -> [recover] -> [resume] -> [start] -> ...");
-
+        _telemetryClient.TrackTrace("Interruptible workload about to start processing...");
         // Start processing
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 _logger.LogInformation("attemp to receive messages from queue");
-                await Task.Delay(1000, stoppingToken);
                 foreach (var message in (await _queueClient.ReceiveMessagesAsync(
                     maxMessages: 10,
                     cancellationToken: stoppingToken)).Value)
@@ -60,11 +63,14 @@ public class Worker : BackgroundService
                 _logger.LogWarning("attempting graceful shutdown...");
                 return;
             }
+
+            await Task.Delay(1000, stoppingToken);
         }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
+        _telemetryClient.TrackTrace("Eviction signal received at worker level");
         // Shutdown
         // An eviction notice been detected. For more information about how to
         // implement this dectection, please take a look at the ScheduledEvents 
@@ -74,9 +80,11 @@ public class Worker : BackgroundService
         // the Azure Scheduled Event metadata endpoint, and eviction notices
         // are expected to be scheduled with up to up to 30 seconds in advance. 
         // Ensure you quicly stop the application within a reasonable amount 
-        // of time to prevent from being forcedly shutdown.  
+        // of time to prevent from being forcedly shutdown.
         _logger.LogInformation("* -> [recover] -> [resume] -> [start] -> [shutdown] -> *");
         await base.StopAsync(cancellationToken);
-        _logger.LogInformation("gracefull shutdown OK...");
+        _telemetryClient.TrackTrace("🎉 gracefull shutdown OK...");
+        _telemetryClient.Flush();
+        Task.Delay(5000).Wait();
     }
 }
