@@ -353,6 +353,12 @@ You might want to get a first hand experience with the interruptible workload by
    az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus
    ```
 
+1. Generate **100** messages
+
+   ```bash
+   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
+   ```
+
 #### Package the workload
 
 1. Build the sample workder
@@ -426,10 +432,6 @@ You might want to get a first hand experience with the interruptible workload by
    az vm application set --resource-group rg-vmspot --name vm-spot --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
    ```
 
-   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
-
-   ![Interruptible Workload service status.](./output.png)
-
 #### Simulate en Eviction Event
 
 1. Test your Spot VM and see how the interruptible workload respond to disruption
@@ -443,6 +445,9 @@ You might want to get a first hand experience with the interruptible workload by
    ```bash
    az monitor app-insights query -g rg-vmspot --app aiworkload --analytics-query 'traces | project timestamp, message | order by timestamp' --offset 0h10m --query "tables[0].rows"
    ```
+
+   > **Warning**
+   > It takes few minutes to dump the traced messages into log analytics. You could choose waiting some time before executing the query or just go to Azure Portal at your Application Insights Live Metrics instance.
 
 1. Start the stopped Spot VM.
 
@@ -484,6 +489,18 @@ You might want to get a first hand experience with the interruptible workload by
    ```bash
    scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
+
+#### Check the interruptible workload status within the Spot VM
+
+1. you can remote ssh by using the section above and then execute the following command
+
+   ```bash
+   sudo systemctl status interruptible-workload
+   ```
+
+   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
+
+   ![Interruptible Workload service status.](./output.png)
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
 [Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
