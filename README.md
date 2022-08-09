@@ -440,6 +440,27 @@ You might want to get a first hand experience with the interruptible workload by
    az rest --method post --uri /subscriptions/{subscriptionId}/resourceGroups/rg-vmspot/providers/Microsoft.Compute/virtualMachines/vm-spot/simulateEviction?api-version=2020-06-01
    ```
 
+   You can see below an example of the response of the metadata endpoint (Azure Instance Metadata Service) when an eviction is scheduled for your Spot VM
+
+   ```json
+   {
+      "DocumentIncarnation": 1,
+      "Events":[
+         {
+            "EventId": "C1BF8322-4CBF-4FC4-9C45-B40CF3106D0E",
+            "EventStatus": "Scheduled",
+            "EventType": "Preempt",
+            "ResourceType": "VirtualMachine",
+            "Resources": ["vm-spot"],
+            "NotBefore": "Tue, 09 Aug 2022 17:07:32 GMT",
+            "Description": "",
+            "EventSource": "Platform",
+            "DurationInSeconds": -1
+         }
+      ]
+   }
+   ```
+
 1. Validate the interruptible workload gracefully shutdown by looking at the tracing data in Azure Monitor
 
    ```bash

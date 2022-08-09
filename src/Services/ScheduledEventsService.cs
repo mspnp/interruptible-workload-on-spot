@@ -11,7 +11,7 @@ public interface IScheduledEventsService
 
 public class ScheduledEventsDocument
 {
-    public string? DocumentIncarnation { get; set; }
+    public int? DocumentIncarnation { get; set; }
     public List<ScheduledEvent>? Events { get; set; }
 }
 
@@ -22,7 +22,10 @@ public class ScheduledEvent
     public string? EventType { get; set; }
     public string? ResourceType { get; set; }
     public List<string>? Resources { get; set; }
-    public DateTime? NotBefore { get; set; }
+    public String? NotBefore { get; set; }
+    public string? EventSource { get; set; }
+    public string? Description { get; set; }
+    public int? DurationInSeconds { get; set; }
 }
 
 public class ScheduledEventsService: IScheduledEventsService
