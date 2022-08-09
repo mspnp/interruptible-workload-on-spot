@@ -11,9 +11,6 @@ param sshPublicKey string
 @description('The Spot Subnet Resource Id')
 param snetId string
 
-@description('The Sourcee media link of the Interruptible Workload')
-param saWorkerUri string
-
 /*** EXISTING RESOURCES ***/
 
 // Built-in Azure RBAC role that is applied to a Azure Storage queue to grant with peek, retrieve, and delete a message privileges. Granted to Azure Spot VM system mananged identity.
@@ -31,14 +28,6 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' existing
     resource q 'queues' existing = {
       name: 'messaging'
     }
-  }
-}
-
-resource ga 'Microsoft.Compute/galleries@2022-01-03' existing = {
-  name: 'ga'
-
-  resource app 'applications' existing = {
-    name: 'app'
   }
 }
 
@@ -141,27 +130,6 @@ resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsof
     roleDefinitionId: storageQueueDataMessageProcessorRole.id
     principalId: vm.identity.principalId
     principalType: 'ServicePrincipal'
-  }
-}
-
-resource ver 'Microsoft.Compute/galleries/applications/versions@2022-01-03' = {
-  name: '0.1.0'
-  location: location
-  parent: ga::app
-  properties: {
-    publishingProfile: {
-      storageAccountType: 'Standard_LRS'
-      enableHealthCheck: false
-      excludeFromLatest: false
-      manageActions: {
-        install: 'mkdir -p /usr/share/worker-0.1.0 && tar -oxzf ./app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i'
-        remove: './orchestrate.sh -u'
-      }
-      replicaCount: 1
-      source: {
-        mediaLink: saWorkerUri
-      }
-    }
   }
 }
 

@@ -271,20 +271,6 @@ resource saVmApps 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
 }
 
-resource ga 'Microsoft.Compute/galleries@2022-01-03' = {
-  name: 'ga'
-  location: location
-
-  resource app 'applications' = {
-    name: 'app'
-    location: location
-    properties: {
-      description: 'Worker App'
-      supportedOSType: 'Linux'
-    }
-  }
-}
-
 resource ai 'Microsoft.Insights/components@2020-02-02' = {
   name: 'aiworkload'
   location: 'westus2'
@@ -315,4 +301,3 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
 
 output snetSpotId string = vnet::snetSpot.id
 output aiConnectionString string = ai.properties.ConnectionString
-output saQueueId string = saWorkloadQueue.id
