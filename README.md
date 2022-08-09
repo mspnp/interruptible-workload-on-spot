@@ -338,8 +338,7 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > When runnning in **Develoment** mode after querying 10 times the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
 
-
-#### Deploy the Azure Spot VM
+#### Deploy the Azure Prequisites for Spot
 
 1. Create the Azure Spot VM resource group
 
@@ -347,16 +346,10 @@ You might want to get a first hand experience with the interruptible workload by
    az group create -n rg-vmspot -l centralus
    ```
 
-1. Create the Azure Spot VM deloyment
+1. Create the prequisites deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus
-   ```
-
-1. Generate **100** messages
-
-   ```bash
-   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
+   az deployment group create -g rg-vmspot -f prereq.bicep -p location=westcentralus
    ```
 
 #### Package the workload
@@ -385,7 +378,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Embed the Azure Application Insights Connection String
 
    ```bash
-   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n main --query properties.outputs.aiConnectionString.value -o tsv)
+   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.aiConnectionString.value -o tsv)
 
    sed -i "s#\(ConnectionString\" : \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
    ```
@@ -410,18 +403,43 @@ You might want to get a first hand experience with the interruptible workload by
    az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
    ```
 
+#### Populate the queue with some messages
+
+
+1. Put **100** messages into the Azure Storage Queue
+   
+   ```bash
+   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
+   ```
+
+   > **Note**
+   > Later these messages are proceesed by the interruptible workload 
+
+
+#### Deploy the Azure Spot VM and install the Interruptible Workload into the VM
+
+1. Get the Spot subnet Azure resource id
+
+   ```bash
+   SNET_SPOT_ID=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.snetSpotId.value -o tsv)
+   ```
+
+1. Get the Azure Storage Queue resource id
+
+   ```bash
+   SA_QUEUE_ID=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.saQueueId.value -o tsv)
+   ```
+
 1. Generate a valid SAS uri expiring in seven days packaged workload
 
    ```bash
-   saWorkerUri=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
+   SA_WORKER_URI=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
    ```
 
-#### Publish the packaged workload and get a valid SAS uri
-
-1. Publish the version **0.1.0** of the orchestration worker app
+1. Create the Azure Spot VM deloyment
 
    ```bash
-   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf ./app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus snetId=$SNET_SPOT_ID saWorkerUri=$SA_WORKER_URI
    ```
 
 #### Set a VM application to the Spot VM
