@@ -31,6 +31,18 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' existing
   }
 }
 
+resource ga 'Microsoft.Compute/galleries@2022-01-03' existing = {
+  name: 'ga'
+
+  resource app 'applications' existing = {
+    name: 'app'
+
+    resource ver 'versions' existing = {
+      name: '0.1.0'
+    }
+  }
+}
+
 /*** RESOURCES ***/
 
 resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
@@ -52,7 +64,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2021-08-01' = {
   dependsOn: []
 }
 
-resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
+resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
   name: 'vm-spot'
   location: location
   identity: {
@@ -109,6 +121,15 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     evictionPolicy: 'Deallocate'
     billingProfile: {
       maxPrice: -1
+    }
+    applicationProfile: {
+      galleryApplications: [
+        {
+          packageReferenceId: ga::app::ver.id
+          enableAutomaticUpgrade: false
+          treatFailureAsDeploymentFailure: false
+        }
+      ]
     }
   }
 }

@@ -450,16 +450,9 @@ You might want to get a first hand experience with the interruptible workload by
    ```bash
    az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus snetId=$SNET_SPOT_ID sshPublicKey="${SSH_PUBLIC}"
    ```
+
    > **Note**
-   > This template deploys the Virtual Machine with priorty Spot and give it permissions to access the Azure Storage Queue by using Azure RBAC.
-
-#### Install the Interruptible Workload into the Spot VM
-
-1. Install the version **0.1.0** of the VM application into the Spot VM
-
-   ```bash
-   az vm application set --resource-group rg-vmspot --name vm-spot --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
-   ```
+   > This template deploys the Virtual Machine with priorty Spot, and give it permissions to access the Azure Storage Queue by using Azure RBAC. Addtionally, it will set the VM Application version named **0.1.0** onto the new Spot VM. As a result, when the VM is started, it is the interruptible workload as well since it is being installed as a service.
 
 #### Simulate en Eviction Event
 
