@@ -365,16 +365,16 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > Once the interruptible workload package gets downloaded into the Spot VM usgin VM Applications, this file will be executed to kick off the orchestration. The orquestration consist on ensuring a single interruptible workload instance by installing this as a service into the VM, and right after start the service for the first time.
 
-1. Embed the Azure Application Insights Connection String
+1. Configure the Azure Application Insights Connection String
 
    ```bash
    AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.aiConnectionString.value -o tsv)
 
-   sed -i "s#\(ConnectionString\" : \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
+   sed -i "s#\(ConnectionString\": \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
    ```
 
    > **Note**
-   > The general recommendation is not to embed secrets in your application but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
+   > The general recommendation is not to embed secrets in your application or configuration files but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
 
 1. Configure the Azure Storage Account Queue name
 
