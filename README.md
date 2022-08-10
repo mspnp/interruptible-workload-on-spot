@@ -548,9 +548,9 @@ You might want to get a first hand experience with the interruptible workload by
    scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
 
-#### Check the interruptible workload status within the Spot VM
+#### Check the interruptible workload status and its logs within the Spot VM
 
-1. you can remote ssh by using the section above and then execute the following command
+1. You can remote ssh by using the section above and then execute the following command
 
    ```bash
    sudo systemctl status interruptible-workload
@@ -559,6 +559,12 @@ You might want to get a first hand experience with the interruptible workload by
    After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
 
    ![Interruptible Workload service status.](./output.png)
+
+1. You may also need to take a look at all logs under some circustance
+
+   ```bash
+   journalctl -u interruptible-workload.service
+   ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
 [Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
