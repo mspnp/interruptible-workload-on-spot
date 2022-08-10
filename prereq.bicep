@@ -5,6 +5,10 @@ targetScope = 'resourceGroup'
 @description('The region for all resources to be deployed into.')
 param location string = 'eastus2'
 
+/*** VARIABLES ***/
+
+var subRgUniqueString = uniqueString('sa', subscription().subscriptionId, resourceGroup().id)
+
 /*** EXISTING RESOURCES ***/
 
 /*** RESOURCES ***/
@@ -252,7 +256,7 @@ resource bh 'Microsoft.Network/bastionHosts@2021-08-01' = {
 }
 
 resource saVmApps 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'savmapps'
+  name: 'sa${subRgUniqueString}vmapps'
   location: location
   kind: 'Storage'
   sku: {
@@ -281,7 +285,7 @@ resource ai 'Microsoft.Insights/components@2020-02-02' = {
 }
 
 resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'saworkloadqueue'
+  name: 'sa${subRgUniqueString}queue'
   location: location
   kind: 'Storage'
   sku: {
@@ -301,3 +305,5 @@ resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' = {
 
 output snetSpotId string = vnet::snetSpot.id
 output aiConnectionString string = ai.properties.ConnectionString
+output saQueueName string = saWorkloadQueue.name
+output saVMAppsName string = saVmApps.name

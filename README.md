@@ -376,6 +376,14 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > The general recommendation is not to embed secrets in your application but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
 
+1. Configure the Azure Storage Account Queue name
+
+   ```bash
+   SA_QUEUE_NAME=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.saQueueName.value -o tsv)
+
+   sed -i "s#\(StorageQueueName\": \"\)#\1${SA_QUEUE_NAME//&/\\&}#g" ./worker/appsettings.json
+   ```
+
 1. Package the worker sample
 
    ```bash
@@ -385,10 +393,17 @@ You might want to get a first hand experience with the interruptible workload by
 
 #### Upload the packaged workload, and the orchestration script
 
+1. Get the Azure Storage Account name for storing your packaged interruptible workload
+
+   ```bash
+   SA_VMAPPS_NAME=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.saVMAppsName.value -o tsv)
+   ```
+
+
 1. Upload the package to the container apps
 
    ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
+   az storage blob upload --account-name $SA_VMAPPS_NAME --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
    ```
 
 #### Deploy the Azure App Infrastructure
@@ -396,7 +411,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Generate a valid SAS uri expiring in seven days packaged workload
 
    ```bash
-   SA_WORKER_URI=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
+   SA_WORKER_URI=$(az storage blob generate-sas --full-uri --account-name $SA_VMAPPS_NAME --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n $SA_VMAPPS_NAME -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
    ```
 
 1. Create the app deloyment
@@ -413,7 +428,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Put **100** messages into the Azure Storage Queue
    
    ```bash
-   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
+   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name $SA_QUEUE_NAME;done;
    ```
 
    > **Note**
@@ -448,7 +463,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Create the Azure Spot VM deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus snetId=$SNET_SPOT_ID sshPublicKey="${SSH_PUBLIC}"
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus snetId=$SNET_SPOT_ID saQueueName=$SA_QUEUE_NAME sshPublicKey="${SSH_PUBLIC}"
    ```
 
    > **Note**

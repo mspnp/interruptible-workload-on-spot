@@ -11,6 +11,13 @@ param sshPublicKey string
 @description('The Spot Subnet Resource Id')
 param snetId string
 
+@description('The Storage Account Queue Name')
+param saQueueName string
+
+/*** VARIABLES ***/
+
+var subRgUniqueString = uniqueString('sa', subscription().subscriptionId, resourceGroup().id)
+
 /*** EXISTING RESOURCES ***/
 
 // Built-in Azure RBAC role that is applied to a Azure Storage queue to grant with peek, retrieve, and delete a message privileges. Granted to Azure Spot VM system mananged identity.
@@ -20,7 +27,7 @@ resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefin
 }
 
 resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' existing = {
-  name: 'saworkloadqueue'
+  name: saQueueName
 
   resource qs 'queueServices' existing = {
     name: 'default'
@@ -135,7 +142,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
 }
 
 resource saVmDiagnostics 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'savmspotdiagnostics'
+  name: 'sa${subRgUniqueString}diag'
   location: location
   kind: 'Storage'
   sku: {
