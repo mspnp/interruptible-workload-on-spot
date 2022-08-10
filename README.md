@@ -439,13 +439,13 @@ You might want to get a first hand experience with the interruptible workload by
 1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
-   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
+   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem -q -N ""
    ```
 
 1. Ensure you have **read-only** access to the private key.
 
    ```bash
-   chmod 400 ~/.ssh/opsvmspotkeys.pem
+   chmod 400 ~/.ssh/opsvmspots.pem
    ```
 
 1. Get the public ssh cert
