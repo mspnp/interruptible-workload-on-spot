@@ -379,9 +379,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Package the worker sample
 
    ```bash
-   pushd ./worker
-   tar -czf ../worker-0.1.0.tar.gz *
-   popd
+   tar -czf worker-0.1.0.tar.gz worker/*
    rm -rf worker/
    ```
 
