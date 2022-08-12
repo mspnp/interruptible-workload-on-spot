@@ -194,23 +194,31 @@ resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' = {
         '10.200.0.0/16'
       ]
     }
-  }
-
-  resource snetBastion 'subnets' = {
-    name: 'AzureBastionSubnet'
-    properties: {
-      addressPrefix: '10.200.0.0/26'
-      networkSecurityGroup: {
-        id: nsgBastion.id
+    subnets: [
+      {
+        name: 'AzureBastionSubnet'
+        properties: {
+          addressPrefix: '10.200.0.0/26'
+          networkSecurityGroup: {
+            id: nsgBastion.id
+          }
+        }
       }
-    }
+      {
+        name: 'snet-spot'
+        properties: {
+          addressPrefix: '10.200.0.64/27'
+        }
+      }
+    ]
   }
 
-  resource snetSpot 'subnets' = {
+  resource snetBastion 'subnets' existing = {
+    name: 'AzureBastionSubnet'
+  }
+
+  resource snetSpot 'subnets' existing = {
     name: 'snet-spot'
-    properties: {
-      addressPrefix: '10.200.0.64/27'
-    }
   }
 }
 
@@ -403,4 +411,15 @@ resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsof
   }
 }
 
+resource ai 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'aiworkload'
+  location: 'westus2'
+  kind: 'other'
+  properties: {
+    Application_Type: 'other'
+  }
+}
+
 /*** OUTPUTS ***/
+
+output aiConnectionString string = ai.properties.ConnectionString

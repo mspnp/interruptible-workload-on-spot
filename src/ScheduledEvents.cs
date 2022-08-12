@@ -1,32 +1,49 @@
-namespace interruptible_workload;
+using Microsoft.ApplicationInsights;
 
+namespace interruptible_workload;
 public class ScheduledEvents: BackgroundService
 {
+    private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<ScheduledEvents> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly TelemetryClient _telemetryClient;
+    private readonly IScheduledEventsService _scheduledEventsService;
 
     public ScheduledEvents(
+        IHostApplicationLifetime lifetime,
         ILogger<ScheduledEvents> logger,
-        HttpClient httpClient)
+        TelemetryClient tc,
+        IScheduledEventsService scheduledEventsService)
     {
+        _lifetime = lifetime;
         _logger = logger;
-        _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("http://169.254.169.254/metadata/");
-        _httpClient.DefaultRequestHeaders.Add("Metadata", "true");
+        _telemetryClient = tc;
+        _scheduledEventsService = scheduledEventsService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ScheduledEvents running at: {time}", DateTimeOffset.UtcNow);
-
+        _logger.LogInformation("endpoint query stated executing");
         while (!stoppingToken.IsCancellationRequested)
         {
-            Console.WriteLine($"ScheduledEvents: {_httpClient.BaseAddress}");
-            var response = await _httpClient.GetAsync("scheduledevents?api-version=2020-07-01");
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(content);
-            await Task.Delay(10000, stoppingToken);
+            try
+            {
+                if (await _scheduledEventsService.GetScheduledEventsAsync(stoppingToken) is ScheduledEventsDocument scheduledEvents
+                    && (scheduledEvents?.Events) != null
+                    && scheduledEvents.Events.Any(e => 
+                        e.EventType == "Preempt" 
+                        && e.Resources.Any(r => r == "vm-spot")))
+                {
+                    _logger.LogWarning("Azure infrastructure is requesting to stop this VM instance");
+                    _telemetryClient.TrackTrace("Eviction Noticed");
+                    _lifetime.StopApplication();
+                    return;
+                }
+            }
+            catch
+            {
+            }
+
+            await Task.Delay(1000, stoppingToken);
         }
     }
 }

@@ -64,7 +64,7 @@ Some important concepts when building on top of Azure Spot VM instances are:
    		 	1. You are still being charge for the underlaying disks
    		 	1. It consumes Cores quota from your Subscription
    1. Simulation: it is possible to [similate an eviction event](https://docs.microsoft.com/azure/virtual-machines/spot-portal#simulate-an-eviction) when Azure needs the capacity back. You want to get familiarized with this since it is going to be recommend for you to simulate interruptions from dev/test environments to guarantee your workload is fully interrumptible before deploying to production.
-1. Events: [Azure Scheduled Events] is a metadata service in Azure that signal about forthcoming events associated to the Virtual Machine resource type. The general recommendation when using Virtual Machines is to routinely query this endpoint to discover when maintenance will occur, so you are given the opportunity to prepare for disruption. One of the platform event types being scheduled that you will want to notice is `Preempt` as this signals the imminent eviction of your spot instance. This event is scheduled with a minimum amount of time of 30 seconds in the future. Given that, you must assumme that you are going to have less than that amount of time to limit the impact. The recommended practice in here is to check this endpoint based on the periodicity your workload mandates (i.e. every 10 seconds) to attempt having a gracefully interruption.
+1. Events: [Azure Scheduled Events] is a metadata service in Azure that helps to discover forthcoming maintenance events associated to the Virtual Machine resource type. The general recommendation when using Virtual Machines is to routinely query this endpoint, so you are given the opportunity to prepare for disruption. One of the platform event types being scheduled that you will want to notice is `Preempt` as this signals the imminent eviction for a particular resource. This event type is scheduled with 30 seconds notice in advance. Althought the recommendation is to [poll the service once per second](https://docs.microsoft.com/azure/virtual-machines/linux/scheduled-events#polling-frequency) to have as much time as possible to gracefully interrupt the processing, you could fine tune the polling frenquency as you see fit. In the end, the periodicity will be mandated by your workload needs and resource utilization.
 1. Metadata Apis: [Azure Retail Prices API]
 
 ## The Workload
@@ -145,9 +145,8 @@ Alternatively, if the workload resources specs are limited by design, or in othe
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
-1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
-1. Generate new ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
    ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
@@ -159,7 +158,13 @@ Alternatively, if the workload resources specs are limited by design, or in othe
    chmod 400 ~/.ssh/opsvmspotkeys.pem
    ```
 
+1. (Optional | Local Development) [Docker](https://docs.docker.com/)
+
+1. (Optional | Local Development) [OpenSSL](https://www.openssl.org/)
+
 1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+
+1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
@@ -259,6 +264,81 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```bash
    cd ./interruptible-workload-on-spot/
    ```
+
+#### (Optional | Local Development) Execute the Interruptible Workload locally
+
+You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-spot-vm).
+
+1. Generate a new self signed certificate to be able to listen over https when using [Azurite emulator for local Azure Storage development](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=docker-hub):
+
+   ```bash
+   mkdir certs \
+   && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ../certs/127.0.0.1-azurite.key -out ../certs/127.0.0.1-azurite.crt -addext "subjectAltName=IP:127.0.0.1" -subj "/C=CO/ST=ST/L=LO/O=OR/OU=OU/CN=CN" --passout pass: \
+   && openssl pkcs12 -export -out ../certs/127.0.0.1-azurite.pfx -inkey ../certs/127.0.0.1-azurite.key -in ../certs/127.0.0.1-azurite.crt --passout pass:  \
+   && sudo cp ../certs/127.0.0.1-azurite.crt /usr/local/share/ca-certificates \
+   && sudo update-ca-certificates \
+   && openssl verify /usr/local/share/ca-certificates/127.0.0.1-azurite.crt \
+   && cp /etc/ssl/certs/127.0.0.1-azurite.pem ../certs
+   ```
+
+   > **Note**
+   > The instructions provided above must be used only for development purposes.
+
+   > **Note**
+   > Listening over https is required by Azurite emulator to enable OAuth support as well as trusting the self signed cert to be able to make secure calls using the SDK in development
+
+   > **Warning**
+   > The instructions provided above are valid for Ubuntu machines or WLS, while you could opt to use `dotnet dev-certs` if you are in Windows or MacOS. For more information, please let's take a look at https://github.com/Azure/Azurite#pfx
+
+1. Run Azurite emulator for local Azure Storage Qeuee developmet
+
+   ```bash
+   docker run -d -v $(pwd)/certs:/workspace -p 10001:10001 --net="host" mcr.microsoft.com/azure-storage/azurite azurite-queue --queueHost 0.0.0.0 --oauth basic --cert /workspace/127.0.0.1-azurite.pem --key /workspace/127.0.0.1-azurite.key --debug /workspace/debug.log --loose --skipApiVersionCheck --disableProductStyleUrl
+   ```
+
+1. Setup the Azure Storage Queue using the REST Apis
+
+   Set the http headers
+
+   ```bash
+   x_ms_date="x-ms-date:$(TZ=GMT date "+%a, %d %h %Y %H:%M:%S %Z")"
+   x_ms_version="x-ms-version:2021-08-06"
+   ```
+
+   Create a shared key signature for the create queue endpoint
+
+   ```bash
+   signature_create_queue=$(printf "PUT\n\n\n\n\n\n\n\n\n\n\n\n${x_ms_date}\n${x_ms_version}\n/devstoreaccount1/devstoreaccount1/messaging" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$(printf 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' | base64 -d -w0 | xxd -p -c256)" -binary |  base64 -w0)
+   ```
+
+   Make a http call to create the Azure Storage Queue named **messaging**
+
+   ```bash
+   curl -X PUT -k -v -H "${x_ms_date}" -H "${x_ms_version}" -H "Authorization: SharedKey devstoreaccount1:$signature_create_queue" https://127.0.0.1:10001/devstoreaccount1/messaging
+   ```
+
+   Create a shared key signature for the create queue message endpoint
+
+   ```bash
+   signature_create_queue_messages=$(printf "POST\n\n\n67\n\napplication/x-www-form-urlencoded\n\n\n\n\n\n\n${x_ms_date}\n${x_ms_version}\n/devstoreaccount1/devstoreaccount1/messaging/messages" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$(printf 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' | base64 -d -w0 | xxd -p -c256)" -binary |  base64 -w0)
+   ```
+
+   Generate **100** messages
+
+   ```bash
+   for i in {1..100}; do curl -X POST -k -v -H "${x_ms_date}" -H "${x_ms_version}" -H "Authorization: SharedKey devstoreaccount1:$signature_create_queue_messages" https://127.0.0.1:10001/devstoreaccount1/messaging/messages -d '<QueueMessage><MessageText>Hello World</MessageText></QueueMessage>';done;
+   ```
+
+1. Run the worker application
+
+   ```bash
+   dotnet run --project src/
+   ```
+
+   > **Note**
+   > When runnning in **Develoment** mode after querying 10 times the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
+
+
 #### Deploy the Azure Spot VM
 
 1. Create the Azure Spot VM resource group
@@ -273,42 +353,53 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus
    ```
 
-#### Package the workload
-
-1. Navigate to the sample worker folder
+1. Generate **100** messages
 
    ```bash
-   cd ./src
+   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
    ```
+
+#### Package the workload
 
 1. Build the sample workder
 
    ```bash
-   dotnet build -c Release
-   ```
-
-1. Navigate to the output folder
-
-   ```bash
-   cd ./bin/Release/net6.0/
+   dotnet build ./src -c Release --self-contained --os linux -o worker
    ```
 
 1. Copy the systemd configuration file
 
    ```bash
-   cp ../../../../interruptible-workload.service .
+   cp interruptible-workload.service worker/.
    ```
 
 1. Copy the orchestration file
 
    ```bash
-   cp ../../../../orchestrate.sh .
+   cp orchestrate.sh worker/.
    ```
+
+   > *Note*
+   > Once the interruptible workload package gets downloaded into the Spot VM usgin VM Applications, this file will be executed to kick off the orchestration. The orquestration consist on ensuring a single interruptible workload instance by installing this as a service into the VM, and right after start the service for the first time.
+
+1. Embed the Azure Application Insights Connection String
+
+   ```bash
+   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n main --query properties.outputs.aiConnectionString.value -o tsv)
+
+   sed -i "s#\(ConnectionString\" : \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
+   ```
+
+   > **Note**
+   > The general recommendation is not to embed secrets in your application but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
 
 1. Package the worker sample
 
    ```bash
-   tar -czf ../../../../worker-0.1.0.tar.gz *
+   pushd ./worker
+   tar -czf ../worker-0.1.0.tar.gz *
+   popd
+   rm -rf worker/
    ```
 
 #### Upload the packaged workload, and the orchestration script
@@ -316,7 +407,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 1. Upload the package to the container apps
 
    ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file ../../../../worker-0.1.0.tar.gz
+   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
    ```
 
 1. Generate a valid SAS uri expiring in seven days packaged workload
@@ -341,10 +432,6 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az vm application set --resource-group rg-vmspot --name vm-spot --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
    ```
 
-   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
-
-   ![Interruptible Workload service status.](./output.png)
-
 #### Simulate en Eviction Event
 
 1. Test your Spot VM and see how the interruptible workload respond to disruption
@@ -353,9 +440,35 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    az rest --method post --uri /subscriptions/{subscriptionId}/resourceGroups/rg-vmspot/providers/Microsoft.Compute/virtualMachines/vm-spot/simulateEviction?api-version=2020-06-01
    ```
 
-   You can see from the logs eleven seconds after the infrastructure **Preempt** event is triggered how the interrumptible workload is noticed as this hosts a service to query every ten seconds the Azure Scheduled Event metadata endpoint
+   You can see below an example of the response of the metadata endpoint (Azure Instance Metadata Service) when an eviction is scheduled for your Spot VM
 
-   ![Interruptible Workload service is noticed about a maintanance event that happens to be the **Preempt** that corresponds to an infrastructure eviction event type.](./eviction.png)
+   ```json
+   {
+      "DocumentIncarnation": 1,
+      "Events":[
+         {
+            "EventId": "C1BF8322-4CBF-4FC4-9C45-B40CF3106D0E",
+            "EventStatus": "Scheduled",
+            "EventType": "Preempt",
+            "ResourceType": "VirtualMachine",
+            "Resources": ["vm-spot"],
+            "NotBefore": "Tue, 09 Aug 2022 17:07:32 GMT",
+            "Description": "",
+            "EventSource": "Platform",
+            "DurationInSeconds": -1
+         }
+      ]
+   }
+   ```
+
+1. Validate the interruptible workload gracefully shutdown by looking at the tracing data in Azure Monitor
+
+   ```bash
+   az monitor app-insights query -g rg-vmspot --app aiworkload --analytics-query 'traces | project timestamp, message | order by timestamp' --offset 0h10m --query "tables[0].rows"
+   ```
+
+   > **Warning**
+   > It takes few minutes to dump the traced messages into log analytics. You could choose waiting some time before executing the query or just go to Azure Portal at your Application Insights Live Metrics instance.
 
 1. Start the stopped Spot VM.
 
@@ -397,6 +510,18 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    ```bash
    scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
+
+#### Check the interruptible workload status within the Spot VM
+
+1. you can remote ssh by using the section above and then execute the following command
+
+   ```bash
+   sudo systemctl status interruptible-workload
+   ```
+
+   After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
+
+   ![Interruptible Workload service status.](./output.png)
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
 [Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
