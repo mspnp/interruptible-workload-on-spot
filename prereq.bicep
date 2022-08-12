@@ -275,12 +275,34 @@ resource saVmApps 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
 }
 
+resource la 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
+  name: 'la${subRgUniqueString}'
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30
+    features: {
+      legacy: 0
+      searchVersion: 1
+      enableLogAccessUsingOnlyResourcePermissions: true
+    }
+    workspaceCapping: {
+      dailyQuotaGb: -1
+    }
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
 resource ai 'Microsoft.Insights/components@2020-02-02' = {
   name: 'aiworkload'
-  location: 'westus2'
+  location: location
   kind: 'other'
   properties: {
     Application_Type: 'other'
+    WorkspaceResourceId: la.id
   }
 }
 

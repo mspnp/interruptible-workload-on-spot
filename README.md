@@ -339,7 +339,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Create the prequisites deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f prereq.bicep -p location=westcentralus
+   az deployment group create -g rg-vmspot -f prereq.bicep -p location=westus
    ```
 
 #### Package the workload
@@ -417,7 +417,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Create the app deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f app.bicep -p location=westcentralus saWorkerUri=$SA_WORKER_URI
+   az deployment group create -g rg-vmspot -f app.bicep -p location=westus saWorkerUri=$SA_WORKER_URI
    ```
 
    > **Note**
@@ -463,7 +463,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Create the Azure Spot VM deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus snetId=$SNET_SPOT_ID saQueueName=$SA_QUEUE_NAME sshPublicKey="${SSH_PUBLIC}"
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westus snetId=$SNET_SPOT_ID saQueueName=$SA_QUEUE_NAME sshPublicKey="${SSH_PUBLIC}"
    ```
 
    > **Note**
