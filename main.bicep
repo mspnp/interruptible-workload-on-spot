@@ -11,23 +11,21 @@ param sshPublicKey string
 @description('The Spot Subnet Resource Id')
 param snetId string
 
-@description('The Storage Account Queue Name')
-param saQueueName string
+@description('The Storage Account Name')
+param saName string
 
 /*** VARIABLES ***/
-
-var subRgUniqueString = uniqueString('sa', subscription().subscriptionId, resourceGroup().id)
 
 /*** EXISTING RESOURCES ***/
 
 // Built-in Azure RBAC role that is applied to a Azure Storage queue to grant with peek, retrieve, and delete a message privileges. Granted to Azure Spot VM system mananged identity.
-resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   name: '8a0f0c08-91a1-4084-bc3d-661d67233fed'
   scope: subscription()
 }
 
-resource saWorkloadQueue 'Microsoft.Storage/storageAccounts@2021-09-01' existing = {
-  name: saQueueName
+resource sa 'Microsoft.Storage/storageAccounts@2021-09-01' existing = {
+  name: saName
 
   resource qs 'queueServices' existing = {
     name: 'default'
@@ -120,8 +118,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
     }
     diagnosticsProfile: {
       bootDiagnostics: {
-        enabled: true
-        storageUri: saVmDiagnostics.properties.primaryEndpoints.blob
+        enabled: false
       }
     }
     priority: 'Spot'
@@ -141,18 +138,9 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
   }
 }
 
-resource saVmDiagnostics 'Microsoft.Storage/storageAccounts@2021-09-01' = {
-  name: 'sa${subRgUniqueString}diag'
-  location: location
-  kind: 'Storage'
-  sku: {
-    name: 'Standard_LRS'
-  }
-}
-
 // Grant the Azure Spot VM managed identity with Storage Queue Data Message Processor Role permissions.
-resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
-  scope: saWorkloadQueue::qs::q
+resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: sa::qs::q
   name: guid(resourceGroup().id, 'mi-vmspot', storageQueueDataMessageProcessorRole.id)
   properties: {
     roleDefinitionId: storageQueueDataMessageProcessorRole.id
