@@ -11,6 +11,12 @@ var subRgUniqueString = uniqueString('sa', subscription().subscriptionId, resour
 
 /*** EXISTING RESOURCES ***/
 
+// Built-in Azure RBAC role that is applied to a Azure Storage queue to grant with peek, retrieve, and delete a message privileges. Granted to Azure Spot VM system mananged identity.
+resource storageQueueDataMessageProcessorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: '8a0f0c08-91a1-4084-bc3d-661d67233fed'
+  scope: subscription()
+}
+
 /*** RESOURCES ***/
 
 resource nsgBastion 'Microsoft.Network/networkSecurityGroups@2021-05-01' = {
@@ -314,8 +320,25 @@ resource sa 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   }
 }
 
+resource miSpot 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: 'mi-spot'
+  location: location
+}
+
+// Grant the User assigned identity with Storage Queue Data Message Processor Role permissions.
+resource sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: sa::qs::q
+  name: guid(resourceGroup().id, miSpot.name, storageQueueDataMessageProcessorRole.id)
+  properties: {
+    roleDefinitionId: storageQueueDataMessageProcessorRole.id
+    principalId: miSpot.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 /*** OUTPUTS ***/
 
 output snetSpotId string = vnet::snetSpot.id
 output aiConnectionString string = ai.properties.ConnectionString
 output saName string = sa.name
+output raName string = sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment.name

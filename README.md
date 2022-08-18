@@ -453,14 +453,23 @@ You might want to get a first hand experience with the interruptible workload by
    SNET_SPOT_ID=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.snetSpotId.value -o tsv)
    ```
 
+1. Get the Spot subnet Azure resource id
+
+   ```bash
+   RA_NAME=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.raName.value -o tsv)
+   ```
+
 1. Create the Azure Spot VM deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westus snetId=$SNET_SPOT_ID saName=$SA_NAME sshPublicKey="${SSH_PUBLIC}"
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westus snetId=$SNET_SPOT_ID raName=$RA_NAME sshPublicKey="${SSH_PUBLIC}"
    ```
 
    > **Note**
    > This template deploys the Virtual Machine with priorty Spot, and give it permissions to access the Azure Storage Queue by using Azure RBAC. Addtionally, it will set the VM Application version named **0.1.0** onto the new Spot VM. As a result, when the VM is started, it is the interruptible workload as well since it is being installed as a service.
+
+   > **Warning**
+   > Please note that your interruptible workload is set as a code as part of the VM creation. Therefore, if your application depends on managed identities like in this reference implementation, it is recommended to use User assigned indentities, and enforce your Spot VM depending on the proper role assignments. Otherwise, you might face race conditions, and as a result it may acquire a mismatched Azure identity token. If you need to make use of System assigned indentities in your archicture, the recommendation is to make the workloads resilient to 403 responses, and ensure they implement the pattern to re-acquire tokens awaiting for the System identity to be assigned with the proper roles.
 
 #### Simulate en Eviction Event
 
