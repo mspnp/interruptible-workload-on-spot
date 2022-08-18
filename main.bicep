@@ -102,6 +102,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
     }
     osProfile: {
       computerName: 'spot'
+#disable-next-line adminusername-should-not-be-literal
       adminUsername: 'azureuser'
       linuxConfiguration: {
         disablePasswordAuthentication: true
