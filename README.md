@@ -145,51 +145,16 @@ Alternatively, if the workload resources specs are limited by design, or in othe
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
-
-1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
-
-   ```bash
-   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem
-   ```
-
-1. Ensure you have **read-only** access to the private key.
-
-   ```bash
-   chmod 400 ~/.ssh/opsvmspotkeys.pem
-   ```
+1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
 
 1. (Optional | Local Development) [Docker](https://docs.docker.com/)
 
 1. (Optional | Local Development) [OpenSSL](https://www.openssl.org/)
 
-1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
-
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
 > **Note**
 > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
-
-#### Expected Results
-
-Following the steps below will result in the creation of the following Azure resources that will be used throughout this Reference Implementation.
-
-| Object                                    | Purpose                                                                                                                                                                                                                                                                          |
-|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A Resource Group                          | Contains all of your organization's related networking, and copmute resources.                                                                                                                                                                                                   |
-| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, the `Standard_D2s_v3` size was chosen and the VM is assigned a System Managed Identity to give it Azure RBAC permissions as a Storage Queue Consumer. |
-| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
-| A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
-| A Spot VM Subnet                          | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
-| A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet supports applying NSG rules to support expected traffic flows, like opening port **22** against the Spot VM private IP. |
-| An Azure Bastion                          | The Azure Bastion that allows you to securely communicate with over Internet from your local computer to the Azure Spot VM. |
-| A Public IP address                       | The public IP address of the Azure Bastion host. |
-| A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
-| A Storage Account (queue)                 | The Azure Storage Account that is a component of the interruptible workload, that represents work to be completed. |
-
-![Depict the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
-
-> **Note**
-> :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
 
 #### Planning
 
@@ -252,6 +217,31 @@ At this point, you have learnt that as an Architect you are tasked at being flex
    > **Note**
    > :bulb: Provided you have choosen a **Max Price and Capacity** eviction policy, it is a good practice to regularly use the [Azure Retail Prices API] to check whether the **Max Price** you set is doing well against  **Current Price**. You might want to consider scheduling this query and respond with **Max Price** changes as well as gracefully deallocate the Virtual Machine accordingly.
 
+#### Expected Results
+
+Following the steps below will result in the creation of the following Azure resources that will be used throughout this Reference Implementation.
+
+| Object                                    | Purpose                                                                                                                                                                                                                                                                          |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A Resource Group                          | Contains all of your organization's related networking, and copmute resources.                                                                                                                                                                                                   |
+| A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, the `Standard_D2s_v3` size was chosen and the VM is assigned a System Managed Identity to give it Azure RBAC permissions as a Storage Queue Consumer. |
+| A Storage Account (blob)                  | This Azure Storage Account is the home for blobs containing the interruptible workload. Therefore it can be later referenced by using SAS uris.                                                                                                                                  |
+| A VM Application version                  | A packaged interruptible workload is distributed using VM Applications as medium to make it available to the Spot VM. Specifically, it is created a version named **0.1.0** that is linked to the interruptible workload that is being uploaded to Azure Blob Storage.           |
+| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
+| A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
+| A Spot VM Subnet                          | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
+| A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet supports applying NSG rules to support expected traffic flows, like opening port **22** against the Spot VM private IP. |
+| An Azure Bastion                          | The Azure Bastion that allows you to securely communicate with over Internet from your local computer to the Azure Spot VM. |
+| A Public IP address                       | The public IP address of the Azure Bastion host. |
+| A Storage Account (diagnostics)           | The Azure Storage Account that stores the Azure Spot VM boot diagnostics telemetry.  |
+| A Storage Account (queue)                 | The Azure Storage Account that is a component of the interruptible workload, that represents work to be completed. |
+| An Azure Monitor Application Insights     | This is where all interruptible traced messages are sent. This will be helpfull to observe whether the interruptible workload is processing and eventually gracefully shutdown.  |
+
+![Depict the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
+
+> **Note**
+> :bulb: Please note that the expected resources for the Spot instance you about to create are equal to what you would create for a regular Azure Virtual Machine. Nothing is changed but the selected **Priority** which is set to **Spot** in this case, while creating an on-demand it would have been set to **Regular**.
+
 #### Clone the repository
 
 1. Clone this repository
@@ -267,7 +257,7 @@ At this point, you have learnt that as an Architect you are tasked at being flex
 
 #### (Optional | Local Development) Execute the Interruptible Workload locally
 
-You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-spot-vm).
+You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-prequisites-for-spot).
 
 1. Generate a new self signed certificate to be able to listen over https when using [Azurite emulator for local Azure Storage development](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=docker-hub):
 
@@ -296,7 +286,7 @@ You might want to get a first hand experience with the interruptible workload by
    docker run -d -v $(pwd)/certs:/workspace -p 10001:10001 --net="host" mcr.microsoft.com/azure-storage/azurite azurite-queue --queueHost 0.0.0.0 --oauth basic --cert /workspace/127.0.0.1-azurite.pem --key /workspace/127.0.0.1-azurite.key --debug /workspace/debug.log --loose --skipApiVersionCheck --disableProductStyleUrl
    ```
 
-1. Setup the Azure Storage Queue using the REST Apis
+1. Setup the local Azure Storage Queue using the REST Apis
 
    Set the http headers
 
@@ -338,8 +328,7 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > When runnning in **Develoment** mode after querying 10 times the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
 
-
-#### Deploy the Azure Spot VM
+#### Deploy the Azure Prequisites for Spot
 
 1. Create the Azure Spot VM resource group
 
@@ -347,16 +336,10 @@ You might want to get a first hand experience with the interruptible workload by
    az group create -n rg-vmspot -l centralus
    ```
 
-1. Create the Azure Spot VM deloyment
+1. Create the prequisites deloyment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westcentralus
-   ```
-
-1. Generate **100** messages
-
-   ```bash
-   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name saworkloadqueue;done;
+   az deployment group create -g rg-vmspot -f prereq.bicep -p location=westus
    ```
 
 #### Package the workload
@@ -379,26 +362,32 @@ You might want to get a first hand experience with the interruptible workload by
    cp orchestrate.sh worker/.
    ```
 
-   > *Note*
+   > **Note**
    > Once the interruptible workload package gets downloaded into the Spot VM usgin VM Applications, this file will be executed to kick off the orchestration. The orquestration consist on ensuring a single interruptible workload instance by installing this as a service into the VM, and right after start the service for the first time.
 
-1. Embed the Azure Application Insights Connection String
+1. Configure the Azure Application Insights Connection String
 
    ```bash
-   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n main --query properties.outputs.aiConnectionString.value -o tsv)
+   AI_CONNSTRING=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.aiConnectionString.value -o tsv)
 
-   sed -i "s#\(ConnectionString\" : \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
+   sed -i "s#\(ConnectionString\": \"\)#\1${AI_CONNSTRING//&/\\&}#g" ./worker/appsettings.json
    ```
 
    > **Note**
-   > The general recommendation is not to embed secrets in your application but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
+   > The general recommendation is not to embed secrets in your application or configuration files but to use a secret storage management solution such us Azure KeyVault. In this reference implementation, we embed this connection string for the sake of simplicity.
+
+1. Configure the Azure Storage Account Queue name
+
+   ```bash
+   SA_NAME=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.saName.value -o tsv)
+
+   sed -i "s#\(QueueStorageAccountName\": \"\)#\1${SA_NAME//&/\\&}#g" ./worker/appsettings.json
+   ```
 
 1. Package the worker sample
 
    ```bash
-   pushd ./worker
-   tar -czf ../worker-0.1.0.tar.gz *
-   popd
+   tar -czf worker-0.1.0.tar.gz worker/*
    rm -rf worker/
    ```
 
@@ -407,30 +396,80 @@ You might want to get a first hand experience with the interruptible workload by
 1. Upload the package to the container apps
 
    ```bash
-   az storage blob upload --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
+   az storage blob upload --account-name $SA_NAME --container-name apps --name worker-0.1.0.tar.gz --file worker-0.1.0.tar.gz
    ```
+
+#### Deploy the Azure App Infrastructure
 
 1. Generate a valid SAS uri expiring in seven days packaged workload
 
    ```bash
-   saWorkerUri=$(az storage blob generate-sas --full-uri --account-name savmapps --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n savmapps -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
+   SA_WORKER_URI=$(az storage blob generate-sas --full-uri --account-name $SA_NAME --container-name apps --name worker-0.1.0.tar.gz --account-key $(az storage account keys list -n $SA_NAME -g rg-vmspot --query [0].value) --expiry  $(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ') --permissions r -o tsv)
    ```
 
-#### Publish the packaged workload and get a valid SAS uri
-
-1. Publish the version **0.1.0** of the orchestration worker app
+1. Create the app deloyment
 
    ```bash
-   az sig gallery-application version create --version-name 0.1.0 --application-name app --gallery-name ga --location "West Central Us" --resource-group rg-vmspot --package-file-link $saWorkerUri --install-command "mkdir -p /usr/share/worker-0.1.0 && tar -oxzf ./app -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i" --remove-command "./orchestrate.sh -u"
+   az deployment group create -g rg-vmspot -f app.bicep -p location=westus saWorkerUri=$SA_WORKER_URI
    ```
 
-#### Set a VM application to the Spot VM
+   > **Note**
+   > This deployment will create the Azure resource that are required to install applications into Virtual Machines. More important you are creating the version **0.1.0** and referencing this to Azure Storage Blob where you uploaded the packaged workload.  
 
-1. Assign the **worker 0.1.0** VM app to the Spot VM
+#### Populate the queue with some messages
+
+1. Put **100** messages into the Azure Storage Queue
+   
+   ```bash
+   for i in {1..100}; do az storage message put -q messaging --content $i  --account-name $SA_NAME;done;
+   ```
+
+   > **Note**
+   > Later these messages are proceesed by the interruptible workload 
+
+#### Deploy the Azure Spot VM
+
+1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
-   az vm application set --resource-group rg-vmspot --name vm-spot --app-version-ids $(az sig gallery-application version show --version-name 0.1.0 --application-name app --gallery-name ga --resource-group rg-vmspot --query id -o tsv)
+   ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem -q -N ""
    ```
+
+1. Ensure you have **read-only** access to the private key.
+
+   ```bash
+   chmod 400 ~/.ssh/opsvmspots.pem
+   ```
+
+1. Get the public ssh cert
+
+   ```bash
+   SSH_PUBLIC=$(cat ~/.ssh/opsvmspots.pem.pub)
+   ```
+
+1. Get the Spot subnet Azure resource id
+
+   ```bash
+   SNET_SPOT_ID=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.snetSpotId.value -o tsv)
+   ```
+
+1. Get the Spot subnet Azure resource id
+
+   ```bash
+   RA_NAME=$(az deployment group show -g rg-vmspot -n prereq --query properties.outputs.raName.value -o tsv)
+   ```
+
+1. Create the Azure Spot VM deloyment
+
+   ```bash
+   az deployment group create -g rg-vmspot -f main.bicep -p location=westus snetId=$SNET_SPOT_ID raName=$RA_NAME sshPublicKey="${SSH_PUBLIC}"
+   ```
+
+   > **Note**
+   > This template deploys the Virtual Machine with priorty Spot, and give it permissions to access the Azure Storage Queue by using Azure RBAC. Addtionally, it will set the VM Application version named **0.1.0** onto the new Spot VM. As a result, when the VM is started, it is the interruptible workload as well since it is being installed as a service.
+
+   > **Warning**
+   > Please note that your interruptible workload is set as a code as part of the VM creation. Therefore, if your application depends on managed identities like in this reference implementation, it is recommended to use User assigned indentities, and enforce your Spot VM depending on the proper role assignments. Otherwise, you might face race conditions, and as a result it may acquire a mismatched Azure identity token. If you need to make use of System assigned indentities in your archicture, the recommendation is to make the workloads resilient to 403 responses, and ensure they implement the pattern to re-acquire tokens awaiting for the System identity to be assigned with the proper roles.
 
 #### Simulate en Eviction Event
 
@@ -511,9 +550,9 @@ You might want to get a first hand experience with the interruptible workload by
    scp -i ~/.ssh/opsvmspots.pem -P 50022 src/bin/Release/net6.0/worker-0.1.0.tar.gz azureuser@localhost:~/.
    ```
 
-#### Check the interruptible workload status within the Spot VM
+#### Check the interruptible workload status and its logs within the Spot VM
 
-1. you can remote ssh by using the section above and then execute the following command
+1. You can remote ssh by using the section above and then execute the following command
 
    ```bash
    sudo systemctl status interruptible-workload
@@ -522,6 +561,12 @@ You might want to get a first hand experience with the interruptible workload by
    After the new VM App version installation is complete if you ssh remote you could execute you could get a status outcome similar to one shown below
 
    ![Interruptible Workload service status.](./output.png)
+
+1. You may also need to take a look at all logs under some circustance
+
+   ```bash
+   journalctl -u interruptible-workload.service
+   ```
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
 [Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
