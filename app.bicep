@@ -37,7 +37,7 @@ resource ver 'Microsoft.Compute/galleries/applications/versions@2022-01-03' = {
       excludeFromLatest: false
       manageActions: {
         install: 'mkdir -p /usr/share/worker-0.1.0 && tar -oxzf ./app --strip-components=1 -C /usr/share/worker-0.1.0 && cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -i'
-        remove: './orchestrate.sh -u'
+        remove: 'cp /usr/share/worker-0.1.0/orchestrate.sh . && ./orchestrate.sh -u'
       }
       replicaCount: 1
       source: {

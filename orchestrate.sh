@@ -19,6 +19,8 @@ do
           echo "uninstall interruptible workload";
 
           sudo systemctl stop interruptible-workload \
-              && sudo rm -rf /usr/share/worker-0.1.0;;
+            && sudo systemctl disable interruptible-workload \
+            && sudo rm /lib/systemd/system/interruptible-workload.service \
+            && sudo rm -rf /usr/share/worker-0.1.0;;
   esac
 done
