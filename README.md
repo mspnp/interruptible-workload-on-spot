@@ -476,7 +476,7 @@ You might want to get a first hand experience with the interruptible workload by
 1. Test your Spot VM and see how the interruptible workload respond to disruption
 
    ```bash
-   az rest --method post --uri /subscriptions/{subscriptionId}/resourceGroups/rg-vmspot/providers/Microsoft.Compute/virtualMachines/vm-spot/simulateEviction?api-version=2020-06-01
+   az vm simulate-eviction -g rg-vmspot -n vm-spot
    ```
 
    You can see below an example of the response of the metadata endpoint (Azure Instance Metadata Service) when an eviction is scheduled for your Spot VM
