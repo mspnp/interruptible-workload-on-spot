@@ -464,6 +464,14 @@ You might want to get a first hand experience with the interruptible workload by
    journalctl -u interruptible-workload.service
    ```
 
+## Contributions
+
+Please see our [contributor guide](./CONTRIBUTING.md).
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact <opencode@microsoft.com> with any additional questions or comments.
+
+With :heart: from Microsoft Patterns & Practices, [Azure Architecture Center](https://aka.ms/architecture).
+
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
 [Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
 [Azure Scheduled Events]: https://docs.microsoft.com/azure/virtual-machines/linux/scheduled-events
