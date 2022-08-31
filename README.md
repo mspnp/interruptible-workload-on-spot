@@ -1,28 +1,28 @@
 # Interruptible workloads on Azure Spot VM instances
 
-This reference implementation provides you with a workload that is meant to guide you to explore the Azure Spot VM manage service from a development and architectural perspective to get the fundamentals, and most of the moving parts so you feel comfortable while building your own workload as a next step. As an application architect, you will know how to design a solution to support interruptions. As a developer, you want to use this workload example to reference when writing code.
+This reference implementation provides you with a workload that is meant to guide you to explore the Azure Spot VM managed service from a development and architectural perspective to get the fundamentals, and most of the moving parts so you feel comfortable while architecting your own workload as a next step. As an application architect, you will know how to design a solution to support interruptions. As a developer, you want to use this example to reference when writing your workload code.
 
 ## Azure Architecture Center guidance
 
-This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://docs.microsoft.com/azure/architecture/guide/spot/spot-eviction). If you haven't reviewed it, we suggest you read it as it will give added context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
+This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM as part of your architecture. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://docs.microsoft.com/azure/architecture/guide/spot/spot-eviction). If you haven't reviewed it, we suggest you read it as it will give important context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
 
 ## Architecture
 
-Azure must provision spare capacity along all its regions so it can respond on demand when new resources are created. Meanwhile that capacity remains idle, you are given with the chance to oportuniscally deploy on top of [that ephemeral compute in your subscription at discount prices and capped at **Pay as you go** prices using Azure Spot VM/VMSS](https://azure.microsoft.com/pricing/spot-advisor/).
+Azure must provision spare capacity along all of its regions so it can respond on demand when new resources requested to be created by customers. While that capacity remains idle, you are given with the chance to opportunistically deploy on top of [that ephemeral compute in your subscription at discount prices and capped at **Pay as you go** prices using Azure Spot VM/VMSS](https://azure.microsoft.com/pricing/spot-advisor/).
 
-While Azure Spot VM represents a great opportunity for having signicant cost savings, this compute Infrastructure as a Service serves without a SLA once created. In other words, Azure infrastructure could evict Virtual Machines with Spot priority at any point in time even right after the machine has started. Therefore, designing workloads for being realiable interruptible is paramount for running on top of this Azure Spot VM.
+While Azure Spot VM represents a great opportunity for having significant cost savings, this compute Infrastructure as a Service is provided without an SLA once created. In other words, Azure might evict Virtual Machines with Spot priority at any point in time even right after the machine has started. Therefore, designing workloads for being reliably interruptible is paramount for running on Azure VMs with spot pricing.
 
-In this reference implementation, you are building an interruptible workload, to be deployed on a single Azure Spot VM. This workload will be unexpectedly disrupted by simulating eviction events, and reliable responding upon that.
+In this reference implementation, you are building a reliability interruptible workload, that will be deployed on a single Azure VM with spot pricing. This workload will be disrupted by simulating eviction events, and reliably responding to that event.
 
-![Depict the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
+![Depicts the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
 
 ## Installation
 
-This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demostrate how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
+This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demonstrates how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
 
-This interruptible workload is installed on Azure Spot VM by using VM applicatioons.
+This interruptible workload is installed on Azure Spot VM by using [VM Applications](https://docs.microsoft.com/azure/virtual-machines/vm-applications).
 
-![Depict the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
+![Depicts the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
 
 ### Prerequisites
 
@@ -149,7 +149,7 @@ Following the steps below will result in the creation of the following Azure res
    cd ./interruptible-workload-on-spot/
    ```
 
-### (Optional | Local Development) Execute the Interruptible Workload locally
+### (Optional | Local Development) Execute the interruptible workload locally
 
 You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-prequisites-for-spot).
 
@@ -222,7 +222,7 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > When runnning in **Develoment** mode after querying 10 times the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
 
-### Deploy the Azure Prequisites for Spot
+### Deploy the Azure prerequisites
 
 1. Create the Azure Spot VM resource group
 
@@ -285,7 +285,7 @@ You might want to get a first hand experience with the interruptible workload by
    rm -rf worker/
    ```
 
-### Upload the packaged workload, and the orchestration script
+### Upload the packaged workload and the orchestration script
 
 1. Upload the package to the container apps
 
@@ -310,7 +310,7 @@ You might want to get a first hand experience with the interruptible workload by
    > **Note**
    > This deployment will create the Azure resource that are required to install applications into Virtual Machines. More important you are creating the version **0.1.0** and referencing this to Azure Storage Blob where you uploaded the packaged workload.
 
-### Populate the queue with some messages
+### Populate the queue
 
 1. Put **100** messages into the Azure Storage Queue
 
@@ -323,7 +323,7 @@ You might want to get a first hand experience with the interruptible workload by
 
 ### Deploy the Azure Spot VM
 
-1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
    ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem -q -N ""
@@ -363,7 +363,7 @@ You might want to get a first hand experience with the interruptible workload by
    > This template deploys the Virtual Machine with priorty Spot, and give it permissions to access the Azure Storage Queue by using Azure RBAC. Addtionally, it will set the VM Application version named **0.1.0** onto the new Spot VM. As a result, when the VM is started, it is the interruptible workload as well since it is being installed as a service.
 
    > **Warning**
-   > Please note that your interruptible workload is set as a code as part of the VM creation. Therefore, if your application depends on managed identities like in this reference implementation, it is recommended to use User assigned indentities, and enforce your Spot VM depending on the proper role assignments. Otherwise, you might face race conditions, and as a result it may acquire a mismatched Azure identity token. If you need to make use of System assigned indentities in your archicture, the recommendation is to make the workloads resilient to 403 responses, and ensure they implement the pattern to re-acquire tokens awaiting for the System identity to be assigned with the proper roles.
+   > Please note that your interruptible workload is set as a code as part of the VM creation. Therefore, if your application depends on managed identities like in this reference implementation, it is recommended to use User assigned identities, and enforce your Spot VM depending on the proper role assignments. Otherwise, you might face race conditions, and as a result it may acquire a mismatched Azure identity token. If you need to make use of System assigned identities in your architecture, the recommendation is to make the workloads resilient to 403 responses, and ensure they implement the pattern to re-acquire tokens awaiting for the System identity to be assigned with the proper roles.
 
 ### Simulate en Eviction Event
 
