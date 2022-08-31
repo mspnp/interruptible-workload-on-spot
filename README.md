@@ -4,7 +4,7 @@ This reference implementation provides you with a workload that is meant to guid
 
 ## Azure Architecture Center guidance
 
-This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://aka.ms/architecture/interruptible-workloads). If you haven't reviewed it, we suggest you read it as it will give added context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
+This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://docs.microsoft.com/azure/architecture/guide/spot/spot-eviction). If you haven't reviewed it, we suggest you read it as it will give added context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
 
 ## Architecture
 
