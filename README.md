@@ -424,7 +424,7 @@ You might want to get a first hand experience with the interruptible workload by
 
 ## Toublehshooting
 
-While none of the following actions are required for you to follow as part of this reference implementation, you might find them useful to have them handy or just to experiment with the Azure Spot Virtual Machine, and the Interruptible Workload. Please take into account that the general recommendation is that orchestration should occur without human intervention.
+While none of the following actions are required for you to follow as part of this reference implementation, you might find useful to have them handy or just to experiment with the Azure Spot Virtual Machine, and the Interruptible Workload. Please take into account that the general recommendation is that orchestration should occur without human intervention.
 
 ### Remote ssh using Bastion into the Spot VM
 
