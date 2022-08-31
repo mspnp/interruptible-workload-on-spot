@@ -12,7 +12,7 @@ Azure must provision spare capacity along all its regions so it can respond on d
 
 While Azure Spot VM represents a great opportunity for having signicant cost savings, this compute Infrastructure as a Service serves without a SLA once created. In other words, Azure infrastructure could evict Virtual Machines with Spot priority at any point in time even right after the machine has started. Therefore, designing workloads for being realiable interruptible is paramount for running on top of this Azure Spot VM.
 
-In this reference implementation, you are building a fault tolerant resilient workload, to be deployed on a single Azure Spot VM. This workload will be unexpectedly inturrupted by simulating eviction events, and reliable responing upon that.
+In this reference implementation, you are building an interruptible workload, to be deployed on a single Azure Spot VM. This workload will be unexpectedly disrupted by simulating eviction events, and reliable responding upon that.
 
 ![Depict the Azure Spot VM infrastructure after deployment](./spot-deploymentdiagram.png)
 
