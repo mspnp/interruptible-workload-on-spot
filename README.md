@@ -4,7 +4,7 @@ This reference implementation provides you with a workload that is meant to guid
 
 ## Azure Architecture Center guidance
 
-This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM as part of your architecture. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://docs.microsoft.com/azure/architecture/guide/spot/spot-eviction). If you haven't reviewed it, we suggest you read it as it will give important context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
+This project has a companion article that describe challenges, design patterns, and best practices for Azure Spot VM as part of your architecture. You can find this article on the Azure Architecture Center at [Interruptible workloads using Azure Spot VM](https://learn.microsoft.com/azure/architecture/guide/spot/spot-eviction). If you haven't reviewed it, we suggest you read it as it will give important context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
 
 ## Architecture
 
@@ -18,16 +18,16 @@ In this reference implementation, you are building a reliability interruptible w
 
 ## Installation
 
-This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://docs.microsoft.com/azure/storage/queues/storage-queues-introduction) and demonstrates how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
+This reference implementation contains a simple and asyncronously queue-processing worker (C#, .NET 6) implemented in combination with [Azure Queue Storage](https://learn.microsoft.com/azure/storage/queues/storage-queues-introduction) and demonstrates how to query the [Azure Scheduled Events] REST endpoint that allows the workload to be signaled prior to eviction so it can anticipate such disruption event and prepare for interruption limiting its impact.
 
-This interruptible workload is installed on Azure Spot VM by using [VM Applications](https://docs.microsoft.com/azure/virtual-machines/vm-applications).
+This interruptible workload is installed on Azure Spot VM by using [VM Applications](https://learn.microsoft.com/azure/virtual-machines/vm-applications).
 
 ![Depicts the Azure Spot VM infrastructure at orchestration time](./spot-orchestrationdiagram.png)
 
 ### Prerequisites
 
 1. An Azure subscription. You can [open an account for free](https://azure.microsoft.com/free).
-1. [Azure CLI installed](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) or you can perform this from Azure Cloud Shell by clicking below.
+1. [Azure CLI installed](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) or you can perform this from Azure Cloud Shell by clicking below.
 
    ```bash
    az login
@@ -39,7 +39,7 @@ This interruptible workload is installed on Azure Spot VM by using [VM Applicati
    az upgrade
    ```
 
-   [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
+   [![Launch Azure Cloud Shell](https://learn.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
 1. [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
 
@@ -50,7 +50,7 @@ This interruptible workload is installed on Azure Spot VM by using [VM Applicati
 1. (Optional) [JQ](https://stedolan.github.io/jq/download/)
 
 > **Note**
-> :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
+> :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can [install Windows Subsystem for Linux](https://learn.microsoft.com/windows/wsl/install#install) to run Bash by entering the following command in PowerShell or Windows Command Prompt and then restarting your machine: `wsl --install`
 
 ### Planning
 
@@ -123,7 +123,7 @@ Following the steps below will result in the creation of the following Azure res
 | A single Azure Spot VM instance           | Based on how flexible you can be you selected an Azure VM size, and it gets deployed so your interruptible workloads can be installed and executed from there. In this Reference Implementation, the `Standard_D2s_v3` size was chosen and the VM is assigned a System Managed Identity to give it Azure RBAC permissions as a Storage Queue Consumer. |
 | A Storage Account (blob)                  | This Azure Storage Account is the home for blobs containing the interruptible workload. Therefore it can be later referenced by using SAS uris.                                                                                                                                  |
 | A VM Application version                  | A packaged interruptible workload is distributed using VM Applications as medium to make it available to the Spot VM. Specifically, it is created a version named **0.1.0** that is linked to the interruptible workload that is being uploaded to Azure Blob Storage.           |
-| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://docs.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
+| A Virtual Network                         | The private Virtual Network that provides with connectivity over internet to the Azure VM so it can be accessed. For more information, please take a look at [Virtual networks and virtual machines in Azure](https://learn.microsoft.com/azure/virtual-network/network-overview). For VNET enabled VMs like this, the [Azure Scheduled Events] Metadata Service is available from a static nonroutable IP. |
 | A Network Card Interface                  | The must have NIC that will allow the interconnection between a virtual machine and a virtual network subnet.                                                                                                                                                                    |
 | A Spot VM Subnet                          | The subnet that the VM is assigned thought its NIC. The subnet allows the NIC to be assigned with a private IP address within the configured network adrress prefix.                                                                                                             |
 | A Bastion Subnet                          | The subnet that the Azure Bastion is assigned to. The subnet supports applying NSG rules to support expected traffic flows, like opening port **22** against the Spot VM private IP. |
@@ -153,7 +153,7 @@ Following the steps below will result in the creation of the following Azure res
 
 You might want to get a first hand experience with the interruptible workload by running this locally. This will help you to get familiarized with the app, or you could skip this step and [deploy this into Azure](./README.md#deploy-the-azure-prequisites-for-spot).
 
-1. Generate a new self signed certificate to be able to listen over https when using [Azurite emulator for local Azure Storage development](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=docker-hub):
+1. Generate a new self signed certificate to be able to listen over https when using [Azurite emulator for local Azure Storage development](https://learn.microsoft.com/azure/storage/common/storage-use-azurite?tabs=docker-hub):
 
    ```bash
    mkdir certs \
@@ -323,7 +323,7 @@ You might want to get a first hand experience with the interruptible workload by
 
 ### Deploy the Azure Spot VM
 
-1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://docs.microsoft.com/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
+1. Generate new Spot VM authentication ssh keys by following the instructions from [Create and manage SSH keys for authentication to a Linux VM in Azure](https://learn.microsoft.com/azure/virtual-machines/linux/create-ssh-keys-detailed). Alternatively, quickly execute the following command:
 
    ```bash
    ssh-keygen -m PEM -t rsa -b 4096 -C "azureuser@vm-spot" -f ~/.ssh/opsvmspots.pem -q -N ""
@@ -428,7 +428,7 @@ While none of the following actions are required for you to follow as part of th
 
 ### Remote ssh using Bastion into the Spot VM
 
-1. SSH into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://docs.microsoft.com/azure/virtual-machines/linux-vm-connect?tabs=Linux)
+1. SSH into the new Spot VM. For detailed steps please take a look at [Connect to a Linux VM](https://learn.microsoft.com/azure/virtual-machines/linux-vm-connect?tabs=Linux)
 
    ```bash
    az network bastion ssh -n bh -g rg-vmspot --username azureuser --ssh-key ~/.ssh/opsvmspots.pem --auth-type ssh-key --target-resource-id $(az vm show -g rg-vmspot -n vm-spot --query id -o tsv)
@@ -475,5 +475,5 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 With :heart: from Microsoft Patterns & Practices, [Azure Architecture Center](https://aka.ms/architecture).
 
 [Azure Spot advisor]: https://azure.microsoft.com/pricing/spot-advisor
-[Azure Retail Prices API]: https://docs.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
-[Azure Scheduled Events]: https://docs.microsoft.com/azure/virtual-machines/linux/scheduled-events
+[Azure Retail Prices API]: https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices
+[Azure Scheduled Events]: https://learn.microsoft.com/azure/virtual-machines/linux/scheduled-events
