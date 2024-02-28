@@ -2,8 +2,8 @@ targetScope = 'resourceGroup'
 
 /*** PARAMETERS ***/
 
-@description('The region for all resources to be deployed into.')
-param location string = 'eastus2'
+@description('The region for all resources to be deployed into. Defaults to the resource group\'s location for highest reliability.')
+param location string = resourceGroup().location
 
 @description('The Spot VM ssh public key')
 param sshPublicKey string
@@ -13,8 +13,6 @@ param snetId string
 
 @description('The Storage Queue Data Message Processor Role Assigment name')
 param raName string
-
-/*** VARIABLES ***/
 
 /*** EXISTING RESOURCES ***/
 
@@ -134,5 +132,3 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-03-01' = {
     sqMiSpotVMStorageQueueDataMessageProcessorRole_roleAssignment
   ]
 }
-
-/*** OUTPUTS ***/
