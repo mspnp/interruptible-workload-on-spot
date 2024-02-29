@@ -2,13 +2,11 @@ targetScope = 'resourceGroup'
 
 /*** PARAMETERS ***/
 
-@description('The region for all resources to be deployed into.')
-param location string = 'eastus2'
+@description('The region for all resources to be deployed into. Defaults to the resource group\'s location for highest reliability.')
+param location string = resourceGroup().location
 
 @description('The Azure Storage Blob SAS uri to be assigned to the VM application')
 param saWorkerUri string
-
-/*** EXISTING RESOURCES ***/
 
 /*** RESOURCES ***/
 
@@ -46,5 +44,3 @@ resource ver 'Microsoft.Compute/galleries/applications/versions@2022-01-03' = {
     }
   }
 }
-
-/*** OUTPUTS ***/

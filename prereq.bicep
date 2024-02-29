@@ -2,8 +2,8 @@ targetScope = 'resourceGroup'
 
 /*** PARAMETERS ***/
 
-@description('The region for all resources to be deployed into.')
-param location string = 'eastus2'
+@description('The region for all resources to be deployed into. Defaults to the resource group\'s location for highest reliability.')
+param location string = resourceGroup().location
 
 /*** VARIABLES ***/
 

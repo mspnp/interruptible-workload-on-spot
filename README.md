@@ -220,20 +220,22 @@ You might want to get a first hand experience with the interruptible workload by
    ```
 
    > **Note**
-   > When running in **Develoment** mode after querying 10 times, the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
+   > When running in **Development** mode after querying 10 times, the Azure Event Schedule detects an eviction notice emulating an Azure infrastructure event claiming your Spot VM instance. The app proceed to shutdown the workload.
 
 ### Deploy the Azure prerequisites
 
 1. Create the Azure Spot VM resource group
 
+   Adjust the location as necessary. The resource group and its resources will all reside in this region.
+
    ```bash
-   az group create -n rg-vmspot -l centralus
+   az group create -n rg-vmspot -l eastus2
    ```
 
 1. Create the prerequisite deployment
 
    ```bash
-   az deployment group create -g rg-vmspot -f prereq.bicep -p location=westus
+   az deployment group create -g rg-vmspot -f prereq.bicep
    ```
 
 The bicep file deploys the following prerequisites:
@@ -315,7 +317,7 @@ The bicep file deploys the following prerequisites:
 1. Create the app deployment
 
    ```bash
-   az deployment group create -g rg-vmspot -f app.bicep -p location=westus saWorkerUri=$SA_WORKER_URI
+   az deployment group create -g rg-vmspot -f app.bicep -p saWorkerUri=$SA_WORKER_URI
    ```
 
    > **Note**
@@ -367,7 +369,7 @@ The bicep file deploys the following prerequisites:
 1. Create the Azure Spot VM deployment
 
    ```bash
-   az deployment group create -g rg-vmspot -f main.bicep -p location=westus snetId=$SNET_SPOT_ID raName=$RA_NAME sshPublicKey="${SSH_PUBLIC}"
+   az deployment group create -g rg-vmspot -f main.bicep -p snetId=$SNET_SPOT_ID raName=$RA_NAME sshPublicKey="${SSH_PUBLIC}"
    ```
 
    > **Note**
@@ -471,7 +473,7 @@ While none of the following actions are required for you to follow as part of th
 
    ![Interruptible Workload service status.](./output.png)
 
-1. You may also need to take a look at all logs under some circustance
+1. You may also need to take a look at all logs under some circumstance
 
    ```bash
    journalctl -u interruptible-workload.service
